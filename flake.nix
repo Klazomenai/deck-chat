@@ -15,7 +15,10 @@
         let
           pkgs = import nixpkgs {
             inherit system;
-            config.allowUnfree = true;  # Android SDK has an unfree license
+            config = {
+              allowUnfree = true;             # Android SDK has an unfree license
+              android_sdk.accept_license = true;  # explicit androidenv license acceptance
+            };
           };
           androidComposition = pkgs.androidenv.composeAndroidPackages {
             buildToolsVersions = [ "36.0.0" ];

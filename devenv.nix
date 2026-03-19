@@ -12,8 +12,9 @@ let
 in
 
 {
-  # Android SDK has an unfree license; required to evaluate androidenv packages
+  # Android SDK has an unfree license; explicit license acceptance required by androidenv
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.android_sdk.accept_license = true;
 
   languages.java = {
     enable = true;
