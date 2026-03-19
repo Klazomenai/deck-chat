@@ -12,6 +12,9 @@ let
 in
 
 {
+  # Android SDK has an unfree license; required to evaluate androidenv packages
+  nixpkgs.config.allowUnfree = true;
+
   languages.java = {
     enable = true;
     jdk.package = pkgs.jdk17;

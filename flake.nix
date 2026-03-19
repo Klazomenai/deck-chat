@@ -13,7 +13,10 @@
     {
       devShells = forAllSystems (system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;  # Android SDK has an unfree license
+          };
           androidComposition = pkgs.androidenv.composeAndroidPackages {
             buildToolsVersions = [ "36.0.0" ];
             platformVersions = [ "36" ];
