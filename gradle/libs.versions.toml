@@ -1,0 +1,27 @@
+[versions]
+kotlin         = "2.3.20"
+agp            = "9.1.0"
+coreKtx        = "1.18.0"
+appcompat      = "1.7.1"
+preferenceKtx  = "1.2.1"
+securityCrypto = "1.1.0"    # final release — deprecated in 1.1.0; no further updates; used for EncryptedSharedPreferences
+sherpaOnnx     = "1.12.29"
+matrixRustSdk  = "26.2.10"
+robolectric    = "4.16.1"
+espresso       = "3.7.0"
+junit          = "4.13.2"
+
+[libraries]
+androidx-core-ktx        = { group = "androidx.core",                name = "core-ktx",         version.ref = "coreKtx" }
+androidx-appcompat       = { group = "androidx.appcompat",            name = "appcompat",         version.ref = "appcompat" }
+androidx-preference-ktx  = { group = "androidx.preference",          name = "preference-ktx",    version.ref = "preferenceKtx" }
+androidx-security-crypto = { group = "androidx.security",             name = "security-crypto",   version.ref = "securityCrypto" }
+sherpa-onnx-android      = { group = "com.github.k2-fsa",            name = "sherpa-onnx-android", version.ref = "sherpaOnnx" }
+matrix-sdk-android       = { group = "org.matrix.rustcomponents",    name = "sdk-android",       version.ref = "matrixRustSdk" }
+junit                    = { group = "junit",                         name = "junit",             version = "4.13.2" }
+robolectric              = { group = "org.robolectric",               name = "robolectric",       version.ref = "robolectric" }
+espresso-core            = { group = "androidx.test.espresso",        name = "espresso-core",     version.ref = "espresso" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android      = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

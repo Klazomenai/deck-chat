@@ -1,0 +1,28 @@
+# Android / Gradle
+.gradle/
+.idea/
+*.iml
+local.properties
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Model assets (downloaded by build, not committed)
+app/src/main/assets/stt/
+app/src/main/assets/tts/
+
+# Keystore / signing
+*.jks
+*.keystore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Nix
+result
+result-*
+.devenv/
+.devenv.flake.nix

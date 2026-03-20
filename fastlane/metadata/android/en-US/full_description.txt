@@ -1,0 +1,16 @@
+DeckChat is a secure, hands-free voice interface to AI crew members.
+
+Voice is captured on Android via Bluetooth headset and converted to text entirely on-device using Sherpa-ONNX (offline, Apache 2.0). No audio ever leaves your phone.
+
+Messages are sent via E2EE Matrix to your self-hosted homeserver and answered by AI crew members in their own voices, also synthesised on-device using Piper TTS.
+
+Features:
+- Offline speech-to-text (Whisper via Sherpa-ONNX — no cloud AI)
+- On-device text-to-speech with crew voice profiles (Piper ONNX)
+- End-to-end encrypted messaging via Matrix
+- Headset button support (push-to-talk)
+- Bluetooth audio routing
+- No Google Play Services required
+- Self-hosted — you control the server
+
+Privacy: voice processing is entirely on-device. No audio, transcripts, or conversation data leave the phone.

@@ -1,0 +1,1 @@
+Voice interface to AI crew — offline STT/TTS, E2EE Matrix, no cloud.
