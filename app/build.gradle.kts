@@ -36,19 +36,14 @@ android {
 // Downloads Whisper Tiny EN int8 ONNX models from HuggingFace if not already present.
 // Models are gitignored — run this task manually before building for device use.
 // CI builds succeed without models since tests use MockSttEngine (no JNI).
-tasks.register("downloadSttModels") {
+// Uses Exec task type — project.exec() was removed in Gradle 9.
+tasks.register<Exec>("downloadSttModels") {
     group = "DeckChat"
     description = "Download Whisper Tiny EN ONNX models for on-device STT"
-    doLast {
-        val encoder = file("src/main/assets/stt/tiny.en-encoder.int8.onnx")
-        val decoder = file("src/main/assets/stt/tiny.en-decoder.int8.onnx")
-        if (encoder.exists() && decoder.exists()) {
-            println("STT models already present, skipping download")
-            return@doLast
-        }
-        project.exec {
-            commandLine("bash", "${rootProject.rootDir}/scripts/download-stt-models.sh")
-        }
+    commandLine("bash", "${rootProject.rootDir}/scripts/download-stt-models.sh")
+    onlyIf {
+        !file("src/main/assets/stt/tiny.en-encoder.int8.onnx").exists() ||
+        !file("src/main/assets/stt/tiny.en-decoder.int8.onnx").exists()
     }
 }
 
