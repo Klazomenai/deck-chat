@@ -46,7 +46,7 @@ tasks.register("downloadSttModels") {
             println("STT models already present, skipping download")
             return@doLast
         }
-        exec {
+        project.exec {
             commandLine("bash", "${rootProject.rootDir}/scripts/download-stt-models.sh")
         }
     }
