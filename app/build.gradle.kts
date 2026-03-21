@@ -40,6 +40,7 @@ android {
 tasks.register<Exec>("downloadSttModels") {
     group = "DeckChat"
     description = "Download Whisper Tiny EN ONNX models for on-device STT"
+    workingDir = rootProject.rootDir
     commandLine("bash", "${rootProject.rootDir}/scripts/download-stt-models.sh")
     onlyIf {
         !file("src/main/assets/stt/tiny.en-encoder.int8.onnx").exists() ||

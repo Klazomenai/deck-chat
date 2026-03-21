@@ -26,13 +26,35 @@ import java.nio.ByteOrder
  */
 class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
 
-    private val recognizer: OfflineRecognizer by lazy { createRecognizer() }
+    private var recognizerInstance: OfflineRecognizer? = null
+
+    private val recognizer: OfflineRecognizer
+        get() {
+            return recognizerInstance ?: createRecognizer().also { recognizerInstance = it }
+        }
 
     private fun copyAssetsToDisk(): File {
         val destDir = File(context.filesDir, "stt")
-        if (destDir.exists() && destDir.listFiles()?.isNotEmpty() == true) return destDir
+        val encoderFile = File(destDir, ENCODER_FILE)
+        val decoderFile = File(destDir, DECODER_FILE)
+
+        if (destDir.exists()) {
+            val encoderOk = encoderFile.exists() && encoderFile.length() > 0
+            val decoderOk = decoderFile.exists() && decoderFile.length() > 0
+            if (encoderOk && decoderOk) return destDir
+        }
+
         destDir.mkdirs()
-        context.assets.list(ASSET_DIR)?.forEach { name ->
+
+        val assetFiles = context.assets.list(ASSET_DIR)
+        require(!assetFiles.isNullOrEmpty()) {
+            "STT model assets not found in $ASSET_DIR — run ./gradlew downloadSttModels first"
+        }
+        require(assetFiles.contains(ENCODER_FILE) && assetFiles.contains(DECODER_FILE)) {
+            "Expected $ENCODER_FILE and $DECODER_FILE in assets/$ASSET_DIR, found: ${assetFiles.toList()}"
+        }
+
+        assetFiles.forEach { name ->
             val dest = File(destDir, name)
             context.assets.open("$ASSET_DIR/$name").use { src ->
                 FileOutputStream(dest).use { out -> src.copyTo(out) }
@@ -60,6 +82,13 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
         return OfflineRecognizer(config = config)
     }
 
+    /**
+     * Transcribes raw 16-bit little-endian PCM audio at 16 kHz mono.
+     *
+     * The caller (RecordingService) is responsible for writing audio in this
+     * format. WAV headers or other container formats are not handled — passing
+     * non-PCM data will produce garbage output.
+     */
     override suspend fun transcribe(audioFile: File): String = withContext(Dispatchers.IO) {
         val stream = recognizer.createStream()
         try {
@@ -75,7 +104,8 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
     }
 
     override fun close() {
-        recognizer.release()
+        recognizerInstance?.release()
+        recognizerInstance = null
     }
 
     companion object {

@@ -9,7 +9,12 @@
 
 set -euo pipefail
 
-DEST="app/src/main/assets/stt"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEST="$REPO_ROOT/app/src/main/assets/stt"
+
+# TODO: pin to a specific HuggingFace commit hash for reproducibility
+# once the model repo (csukuangfj/sherpa-onnx-whisper-tiny.en) is cloned locally.
 HF_BASE="https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny.en/resolve/main"
 
 mkdir -p "$DEST"
