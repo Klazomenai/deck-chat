@@ -7,7 +7,7 @@ import java.io.File
  *
  * Takes a [File] containing raw 16-bit little-endian PCM audio at 16 kHz mono.
  * File-based API chosen over ByteArray (deviation from issue #3 spec) because
- * RecordingService writes to disk and Sherpa-ONNX JNI operates on file paths.
+ * the recorder writes audio to disk and Sherpa-ONNX JNI operates on file paths.
  */
 interface SttEngine {
     suspend fun transcribe(audioFile: File): String

@@ -85,7 +85,7 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
     /**
      * Transcribes raw 16-bit little-endian PCM audio at 16 kHz mono.
      *
-     * The caller (RecordingService) is responsible for writing audio in this
+     * The caller is responsible for writing audio in this
      * format. WAV headers or other container formats are not handled — passing
      * non-PCM data will produce garbage output.
      */

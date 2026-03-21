@@ -22,12 +22,17 @@ mkdir -p "$DEST"
 echo "Downloading Whisper Tiny EN (int8 ONNX) to $DEST..."
 
 for file in "tiny.en-encoder.int8.onnx" "tiny.en-decoder.int8.onnx"; do
-    if [ -f "$DEST/$file" ]; then
-        echo "  $file already present, skipping"
+    dest_path="$DEST/$file"
+    if [ -s "$dest_path" ]; then
+        echo "  $file already present and non-empty, skipping"
         continue
+    elif [ -f "$dest_path" ]; then
+        echo "  $file exists but is empty or incomplete, re-downloading"
     fi
     echo "  Downloading $file..."
-    curl -fL --progress-bar "$HF_BASE/$file" -o "$DEST/$file"
+    tmp_path="${dest_path}.tmp.$$"
+    curl -fL --progress-bar "$HF_BASE/$file" -o "$tmp_path"
+    mv "$tmp_path" "$dest_path"
 done
 
 echo "STT models ready."
