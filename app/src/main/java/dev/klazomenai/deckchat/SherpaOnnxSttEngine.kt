@@ -93,6 +93,12 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
         val stream = recognizer.createStream()
         try {
             val bytes = audioFile.readBytes()
+            require(bytes.isNotEmpty()) {
+                "Audio file ${audioFile.absolutePath} is empty; expected 16-bit PCM data."
+            }
+            require(bytes.size % 2 == 0) {
+                "Audio file ${audioFile.absolutePath} has ${bytes.size} bytes; expected even byte count for 16-bit PCM."
+            }
             val buf = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
             val samples = FloatArray(bytes.size / 2) { buf.short / 32768f }
             stream.acceptWaveform(samples, SAMPLE_RATE)
