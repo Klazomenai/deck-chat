@@ -18,7 +18,12 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         // Sherpa-ONNX is published under com.github.k2-fsa group ID via JitPack
-        maven { url = uri("https://jitpack.io") }
+        maven {
+            url = uri("https://jitpack.io")
+            content {
+                includeGroup("com.github.k2-fsa")
+            }
+        }
     }
 }
 

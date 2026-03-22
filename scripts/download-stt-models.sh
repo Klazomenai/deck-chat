@@ -31,8 +31,10 @@ for file in "tiny.en-encoder.int8.onnx" "tiny.en-decoder.int8.onnx"; do
     fi
     echo "  Downloading $file..."
     tmp_path="${dest_path}.tmp.$$"
+    trap 'rm -f "$tmp_path"' EXIT
     curl -fL --progress-bar "$HF_BASE/$file" -o "$tmp_path"
     mv "$tmp_path" "$dest_path"
+    trap - EXIT
 done
 
 echo "STT models ready."

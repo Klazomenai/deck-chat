@@ -21,7 +21,7 @@ sherpa-onnx-android          = { group = "com.github.k2-fsa",        name = "she
 matrix-sdk-android           = { group = "org.matrix.rustcomponents", name = "sdk-android",                version.ref = "matrixRustSdk" }
 kotlinx-coroutines-android   = { group = "org.jetbrains.kotlinx",    name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test      = { group = "org.jetbrains.kotlinx",    name = "kotlinx-coroutines-test",    version.ref = "coroutines" }
-junit                        = { group = "junit",                     name = "junit",                      version = "4.13.2" }
+junit                        = { group = "junit",                     name = "junit",                      version.ref = "junit" }
 robolectric                  = { group = "org.robolectric",           name = "robolectric",                version.ref = "robolectric" }
 espresso-core                = { group = "androidx.test.espresso",    name = "espresso-core",              version.ref = "espresso" }
 
