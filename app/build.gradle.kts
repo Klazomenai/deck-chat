@@ -33,12 +33,30 @@ android {
     }
 }
 
+// Downloads Whisper Tiny EN int8 ONNX models from HuggingFace if not already present.
+// Models are gitignored — run this task manually before building for device use.
+// CI builds succeed without models since tests use MockSttEngine (no JNI).
+// Uses Exec task type — project.exec() was removed in Gradle 9.
+tasks.register<Exec>("downloadSttModels") {
+    group = "DeckChat"
+    description = "Download Whisper Tiny EN ONNX models for on-device STT"
+    workingDir = rootProject.rootDir
+    commandLine("bash", "${rootProject.rootDir}/scripts/download-stt-models.sh")
+    onlyIf {
+        !file("src/main/assets/stt/tiny.en-encoder.int8.onnx").exists() ||
+        !file("src/main/assets/stt/tiny.en-decoder.int8.onnx").exists()
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.sherpa.onnx.android)
+    implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     androidTestImplementation(libs.espresso.core)
 }
