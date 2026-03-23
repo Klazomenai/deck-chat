@@ -75,14 +75,21 @@ class RustMatrixClient(
     }
 
     override fun startSync(onMessage: (CrewMessage) -> Unit) {
+        if (syncService != null) return // already syncing
+
         val client = requireClient()
+        this.onMessageCallback = onMessage
         scope.launch {
-            val syncServiceBuilder = client.syncService()
-            val service = syncServiceBuilder.finish()
-            syncService = service
+            val service = client.syncService().finish()
+            synchronized(this@RustMatrixClient) {
+                if (syncService != null) {
+                    // stop() was called between launch and here — don't start
+                    return@launch
+                }
+                syncService = service
+            }
             service.start()
         }
-        this.onMessageCallback = onMessage
     }
 
     /**
