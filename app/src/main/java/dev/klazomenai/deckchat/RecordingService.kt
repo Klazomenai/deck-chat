@@ -1,17 +1,20 @@
 package dev.klazomenai.deckchat
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.IBinder
+import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
 
@@ -58,6 +61,13 @@ class RecordingService : Service() {
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
         }
 
         val bufferSize = AudioRecord.getMinBufferSize(
@@ -111,10 +121,11 @@ class RecordingService : Service() {
         }
 
         isRecording = false
+        // Stop AudioRecord first to unblock the read() call in the recording thread,
+        // then join the thread. Joining before stop would deadlock until timeout.
+        audioRecord?.stop()
         recordingThread?.join(THREAD_JOIN_TIMEOUT_MS)
         recordingThread = null
-
-        audioRecord?.stop()
         audioRecord?.release()
         audioRecord = null
 

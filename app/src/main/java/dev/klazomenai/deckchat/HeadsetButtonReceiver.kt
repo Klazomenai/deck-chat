@@ -36,7 +36,12 @@ class HeadsetButtonReceiver : BroadcastReceiver() {
             }
             KeyEvent.ACTION_UP -> {
                 serviceIntent.action = RecordingService.ACTION_STOP
-                context.startService(serviceIntent)
+                try {
+                    context.startService(serviceIntent)
+                } catch (_: IllegalStateException) {
+                    // App may be in background if process was killed between DOWN/UP.
+                    // Service isn't running anyway — safe to ignore.
+                }
             }
         }
     }

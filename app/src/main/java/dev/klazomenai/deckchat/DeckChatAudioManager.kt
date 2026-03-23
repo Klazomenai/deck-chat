@@ -26,7 +26,9 @@ class DeckChatAudioManager(context: Context) {
 
     /**
      * Attempts to route audio to a Bluetooth SCO headset.
-     * Returns true if a device was found and routing was set.
+     * Returns true if routing was requested. On API 31+ this confirms a
+     * device was found; on API ≤30 the legacy SCO path is best-effort
+     * and always returns true (actual connection is asynchronous).
      */
     fun routeToBluetooth(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
