@@ -83,7 +83,7 @@ class RustMatrixClient(
             val service = client.syncService().finish()
             synchronized(this@RustMatrixClient) {
                 if (syncService != null) {
-                    // stop() was called between launch and here — don't start
+                    // Another startSync() coroutine already assigned — don't double-start
                     return@launch
                 }
                 syncService = service

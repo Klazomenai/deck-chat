@@ -99,6 +99,7 @@ class MatrixClientTest {
         val body = "[maren:dispatch] Line one\nLine two\nLine three"
         val result = parseCrewMessage(body, "@bot:example.com")
         assertEquals("maren", result?.crewName)
+        assertEquals("dispatch", result?.verbosity)
         assertEquals("Line one\nLine two\nLine three", result?.body)
     }
 
