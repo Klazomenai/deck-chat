@@ -5,7 +5,6 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
-import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
@@ -23,7 +22,7 @@ import java.io.FileOutputStream
  * task or scripts/download-tts-models.sh.
  *
  * Audio plays through the default system output. Bluetooth headset
- * routing is handled separately by DeckChatAudioManager (issue #5).
+ * routing is handled separately by the audio routing layer (issue #5).
  *
  * JNI library is loaded via the companion object; this class must NOT be
  * instantiated in JVM unit tests. Use MockTtsEngine instead.
@@ -36,9 +35,13 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
         val destDir = File(context.filesDir, "tts/$voiceDir")
         val modelFile = File(destDir, "${voiceDir.removePrefix("vits-piper-")}.onnx")
         val tokensFile = File(destDir, "tokens.txt")
+        val espeakDataDir = File(destDir, "espeak-ng-data")
 
-        if (destDir.exists() && modelFile.exists() && modelFile.length() > 0
-            && tokensFile.exists() && tokensFile.length() > 0) {
+        if (destDir.exists()
+            && modelFile.exists() && modelFile.length() > 0
+            && tokensFile.exists() && tokensFile.length() > 0
+            && espeakDataDir.exists() && espeakDataDir.isDirectory
+            && (espeakDataDir.listFiles()?.isNotEmpty() == true)) {
             return destDir
         }
 
@@ -56,50 +59,43 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
 
     private fun copyAssetsRecursive(assetPath: String, destDir: File) {
         val children = context.assets.list(assetPath) ?: return
-        if (children.isEmpty()) {
-            // Leaf file — copy it
-            val dest = File(destDir, "")
-            context.assets.open(assetPath).use { src ->
-                FileOutputStream(dest).use { out -> src.copyTo(out) }
-            }
-        } else {
-            // Directory — recurse
-            for (child in children) {
-                val childAssetPath = "$assetPath/$child"
-                val childDest = File(destDir, child)
-                val grandchildren = context.assets.list(childAssetPath)
-                if (grandchildren != null && grandchildren.isNotEmpty()) {
-                    childDest.mkdirs()
-                    copyAssetsRecursive(childAssetPath, childDest)
-                } else {
-                    context.assets.open(childAssetPath).use { src ->
-                        FileOutputStream(childDest).use { out -> src.copyTo(out) }
-                    }
+        for (child in children) {
+            val childAssetPath = "$assetPath/$child"
+            val childDest = File(destDir, child)
+            val grandchildren = context.assets.list(childAssetPath)
+            if (grandchildren != null && grandchildren.isNotEmpty()) {
+                childDest.mkdirs()
+                copyAssetsRecursive(childAssetPath, childDest)
+            } else {
+                context.assets.open(childAssetPath).use { src ->
+                    FileOutputStream(childDest).use { out -> src.copyTo(out) }
                 }
             }
         }
     }
 
     private fun getOrCreateTts(crewName: String): OfflineTts {
-        return ttsInstances.getOrPut(crewName) {
-            val voiceDir = CREW_VOICES[crewName]
-                ?: throw IllegalArgumentException("Unknown crew member: $crewName. Known: ${CREW_VOICES.keys}")
-            val ttsDir = copyVoiceToDisk(voiceDir)
-            val modelName = voiceDir.removePrefix("vits-piper-")
+        return synchronized(ttsInstances) {
+            ttsInstances.getOrPut(crewName) {
+                val voiceDir = CREW_VOICES[crewName]
+                    ?: throw IllegalArgumentException("Unknown crew member: $crewName. Known: ${CREW_VOICES.keys}")
+                val ttsDir = copyVoiceToDisk(voiceDir)
+                val modelName = voiceDir.removePrefix("vits-piper-")
 
-            val config = OfflineTtsConfig(
-                model = OfflineTtsModelConfig(
-                    vits = OfflineTtsVitsModelConfig(
-                        model = "${ttsDir.absolutePath}/$modelName.onnx",
-                        tokens = "${ttsDir.absolutePath}/tokens.txt",
-                        dataDir = "${ttsDir.absolutePath}/espeak-ng-data",
+                val config = OfflineTtsConfig(
+                    model = OfflineTtsModelConfig(
+                        vits = OfflineTtsVitsModelConfig(
+                            model = "${ttsDir.absolutePath}/$modelName.onnx",
+                            tokens = "${ttsDir.absolutePath}/tokens.txt",
+                            dataDir = "${ttsDir.absolutePath}/espeak-ng-data",
+                        ),
+                        numThreads = 2,
+                        debug = false,
+                        provider = "cpu",
                     ),
-                    numThreads = 2,
-                    debug = false,
-                    provider = "cpu",
-                ),
-            )
-            OfflineTts(config = config)
+                )
+                OfflineTts(config = config)
+            }
         }
     }
 
@@ -115,6 +111,9 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
             AudioFormat.CHANNEL_OUT_MONO,
             AudioFormat.ENCODING_PCM_FLOAT,
         )
+        require(bufSize > 0) {
+            "AudioTrack.getMinBufferSize returned $bufSize for sampleRate=${audio.sampleRate}"
+        }
         val track = AudioTrack(
             AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
@@ -139,8 +138,10 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
     }
 
     override fun close() {
-        ttsInstances.values.forEach { it.release() }
-        ttsInstances.clear()
+        synchronized(ttsInstances) {
+            ttsInstances.values.forEach { it.release() }
+            ttsInstances.clear()
+        }
     }
 
     companion object {

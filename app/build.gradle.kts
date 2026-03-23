@@ -57,8 +57,9 @@ tasks.register<Exec>("downloadTtsModels") {
     workingDir = rootProject.rootDir
     commandLine("bash", "${rootProject.rootDir}/scripts/download-tts-models.sh")
     onlyIf {
-        !file("src/main/assets/tts/vits-piper-en_GB-cori-high/en_GB-cori-high.onnx").exists() ||
-        !file("src/main/assets/tts/vits-piper-en_US-lessac-high/en_US-lessac-high.onnx").exists()
+        val cori = file("src/main/assets/tts/vits-piper-en_GB-cori-high/en_GB-cori-high.onnx")
+        val lessac = file("src/main/assets/tts/vits-piper-en_US-lessac-high/en_US-lessac-high.onnx")
+        !cori.exists() || cori.length() == 0L || !lessac.exists() || lessac.length() == 0L
     }
 }
 
