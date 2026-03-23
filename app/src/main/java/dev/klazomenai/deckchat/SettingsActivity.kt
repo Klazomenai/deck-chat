@@ -49,6 +49,7 @@ class SettingsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             storage.homeserverUrl = url
+            updateSessionStatus(statusText)
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
         }
 

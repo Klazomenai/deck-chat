@@ -40,7 +40,7 @@ class SecureStorageTest {
     }
 
     @Test
-    fun `hasSession returns true when all session fields present`() {
+    fun `hasSession returns true when required fields present`() {
         val storage = createStorage()
         storage.homeserverUrl = "https://matrix.example.com"
         storage.userId = "@user:example.com"
