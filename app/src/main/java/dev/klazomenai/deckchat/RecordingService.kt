@@ -134,7 +134,11 @@ class RecordingService : Service() {
         isRecording = false
         // Stop AudioRecord first to unblock the read() call in the recording thread,
         // then join the thread. Joining before stop would deadlock until timeout.
-        audioRecord?.stop()
+        try {
+            audioRecord?.stop()
+        } catch (_: IllegalStateException) {
+            // AudioRecord not in recording state — proceed with cleanup
+        }
         recordingThread?.join(THREAD_JOIN_TIMEOUT_MS)
         recordingThread = null
         audioRecord?.release()
@@ -182,7 +186,11 @@ class RecordingService : Service() {
     override fun onDestroy() {
         if (isRecording) {
             isRecording = false
-            audioRecord?.stop()
+            try {
+                audioRecord?.stop()
+            } catch (_: IllegalStateException) {
+                // AudioRecord not in recording state — proceed with cleanup
+            }
             recordingThread?.join(THREAD_JOIN_TIMEOUT_MS)
             audioRecord?.release()
         }
