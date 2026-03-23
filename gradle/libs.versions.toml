@@ -10,6 +10,8 @@ matrixRustSdk  = "26.03.19"
 coroutines     = "1.10.2"
 robolectric    = "4.16.1"
 espresso       = "3.7.0"
+testRunner     = "1.6.2"
+testExtJunit   = "1.2.1"
 junit          = "4.13.2"
 
 [libraries]
@@ -24,6 +26,8 @@ kotlinx-coroutines-test      = { group = "org.jetbrains.kotlinx",    name = "kot
 junit                        = { group = "junit",                     name = "junit",                      version.ref = "junit" }
 robolectric                  = { group = "org.robolectric",           name = "robolectric",                version.ref = "robolectric" }
 espresso-core                = { group = "androidx.test.espresso",    name = "espresso-core",              version.ref = "espresso" }
+androidx-test-runner         = { group = "androidx.test",             name = "runner",                     version.ref = "testRunner" }
+androidx-test-ext-junit      = { group = "androidx.test.ext",         name = "junit",                      version.ref = "testExtJunit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
