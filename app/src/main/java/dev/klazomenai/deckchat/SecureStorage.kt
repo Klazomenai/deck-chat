@@ -87,6 +87,8 @@ class SecureStorage(
             .remove("${KEY_ACCESS_TOKEN}_iv")
             .remove(KEY_REFRESH_TOKEN)
             .remove("${KEY_REFRESH_TOKEN}_iv")
+            .remove(KEY_SQLITE_PASSPHRASE)
+            .remove("${KEY_SQLITE_PASSPHRASE}_iv")
             .remove(KEY_USER_ID)
             .remove(KEY_DEVICE_ID)
             .remove(KEY_SLIDING_SYNC_VERSION)

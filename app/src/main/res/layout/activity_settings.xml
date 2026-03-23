@@ -16,6 +16,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/homeserver_url_label"
+        android:labelFor="@id/homeserver_url_input"
         android:layout_marginBottom="4dp" />
 
     <EditText

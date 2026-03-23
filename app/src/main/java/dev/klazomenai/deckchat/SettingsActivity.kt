@@ -43,6 +43,11 @@ class SettingsActivity : AppCompatActivity() {
                 homeserverInput.error = "URL must start with https://"
                 return@setOnClickListener
             }
+            val uri = android.net.Uri.parse(url)
+            if (uri.host.isNullOrBlank()) {
+                homeserverInput.error = "URL must include a hostname"
+                return@setOnClickListener
+            }
             storage.homeserverUrl = url
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
         }

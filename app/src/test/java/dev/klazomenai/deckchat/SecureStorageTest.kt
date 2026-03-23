@@ -62,6 +62,7 @@ class SecureStorageTest {
         storage.userId = "@user:example.com"
         storage.accessToken = "token123"
         storage.refreshToken = "refresh123"
+        storage.sqlitePassphrase = "passphrase"
 
         storage.clearSession()
 
@@ -69,6 +70,7 @@ class SecureStorageTest {
         assertNull(storage.userId)
         assertNull(storage.accessToken)
         assertNull(storage.refreshToken)
+        assertNull(storage.sqlitePassphrase)
         assertFalse(storage.hasSession())
     }
 
