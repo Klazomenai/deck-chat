@@ -49,8 +49,18 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
 
         val assetPath = "tts/$voiceDir"
         val assetFiles = context.assets.list(assetPath)
+        val expectedModel = "${voiceDir.removePrefix("vits-piper-")}.onnx"
         require(!assetFiles.isNullOrEmpty()) {
             "TTS voice assets not found in $assetPath — run ./gradlew downloadTtsModels first"
+        }
+        require(assetFiles.contains(expectedModel)) {
+            "TTS model $expectedModel not found in $assetPath — run ./gradlew downloadTtsModels first"
+        }
+        require(assetFiles.contains("tokens.txt")) {
+            "TTS tokens.txt not found in $assetPath — run ./gradlew downloadTtsModels first"
+        }
+        require(assetFiles.contains("espeak-ng-data")) {
+            "TTS espeak-ng-data not found in $assetPath — run ./gradlew downloadTtsModels first"
         }
 
         copyAssetsRecursive(assetPath, destDir)
@@ -128,6 +138,12 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
             AudioTrack.MODE_STREAM,
             AudioManager.AUDIO_SESSION_ID_GENERATE,
         )
+        if (track.state != AudioTrack.STATE_INITIALIZED) {
+            track.release()
+            throw IllegalStateException(
+                "AudioTrack init failed (state=${track.state}) for sampleRate=${audio.sampleRate}"
+            )
+        }
         try {
             track.play()
             track.write(audio.samples, 0, audio.samples.size, AudioTrack.WRITE_BLOCKING)

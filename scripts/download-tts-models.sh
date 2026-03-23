@@ -28,7 +28,12 @@ for voice in "${VOICES[@]}"; do
     voice_dir="$DEST/$voice"
     model_file="$voice_dir/${voice#vits-piper-}.onnx"
 
-    if [ -d "$voice_dir" ] && [ -s "$model_file" ]; then
+    tokens_file="$voice_dir/tokens.txt"
+    espeak_dir="$voice_dir/espeak-ng-data"
+
+    if [ -d "$voice_dir" ] && [ -s "$model_file" ] \
+        && [ -s "$tokens_file" ] \
+        && [ -d "$espeak_dir" ] && [ -n "$(ls -A "$espeak_dir" 2>/dev/null)" ]; then
         echo "  $voice already present and valid, skipping"
         continue
     fi
