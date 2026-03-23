@@ -80,9 +80,8 @@ class RecordingService : Service() {
             return
         }
 
-        // RECORD_AUDIO permission is requested by the Activity at runtime.
-        // This service is only started from HeadsetButtonReceiver after the
-        // user has granted the permission.
+        // Callers must ensure RECORD_AUDIO is granted before starting this
+        // service. The checkSelfPermission guard above stops gracefully if not.
         @SuppressLint("MissingPermission")
         audioRecord = AudioRecord(
             MediaRecorder.AudioSource.MIC,
@@ -109,6 +108,8 @@ class RecordingService : Service() {
                 val read = audioRecord?.read(buffer, 0, buffer.size) ?: -1
                 if (read > 0) {
                     audioBuffer.add(buffer.copyOf(read))
+                } else if (read < 0) {
+                    break // AudioRecord error — exit to avoid busy-spin
                 }
             }
         }.also { it.start() }
@@ -171,8 +172,8 @@ class RecordingService : Service() {
     override fun onDestroy() {
         if (isRecording) {
             isRecording = false
-            recordingThread?.join(THREAD_JOIN_TIMEOUT_MS)
             audioRecord?.stop()
+            recordingThread?.join(THREAD_JOIN_TIMEOUT_MS)
             audioRecord?.release()
         }
         super.onDestroy()

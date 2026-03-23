@@ -32,12 +32,16 @@ class DeckChatAudioManager(context: Context) {
      */
     fun routeToBluetooth(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val btDevice = audioManager.availableCommunicationDevices
-                .firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
-            if (btDevice != null) {
-                audioManager.setCommunicationDevice(btDevice)
-                true
-            } else {
+            try {
+                val btDevice = audioManager.availableCommunicationDevices
+                    .firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
+                if (btDevice != null) {
+                    audioManager.setCommunicationDevice(btDevice)
+                } else {
+                    false
+                }
+            } catch (_: SecurityException) {
+                // BLUETOOTH_CONNECT not granted
                 false
             }
         } else {
