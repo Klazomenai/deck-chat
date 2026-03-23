@@ -66,6 +66,7 @@ tasks.register<Exec>("downloadTtsModels") {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.security.crypto)
     implementation(libs.sherpa.onnx.android)
     implementation(libs.kotlinx.coroutines.android)
 
