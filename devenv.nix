@@ -24,6 +24,10 @@ in
   packages = [
     pkgs.gradle
     androidComposition.androidsdk
+    pkgs.git
+    pkgs.curl
+    pkgs.gnutar
+    pkgs.bzip2
   ];
 
   env = {
@@ -41,6 +45,51 @@ in
     check-gms.exec = ''
       ./gradlew dependencies | grep -i "gms\|play-services\|firebase" || echo "No GMS dependencies found"
     '';
+
+    install-debug.exec = ''
+      ./gradlew installDebug "$@"
+    '';
+
+    device-test.exec = ''
+      ./gradlew connectedDebugAndroidTest "$@"
+    '';
+
+    logcat.exec = ''
+      if [ -z "$ANDROID_SERIAL" ]; then
+        device_lines="$(adb devices | tail -n +2 | grep -v '^\*' | sed '/^[[:space:]]*$/d')"
+        if [ -z "$device_lines" ]; then
+          echo "No device connected — plug in via USB and enable USB debugging."
+          exit 1
+        fi
+        if printf '%s\n' "$device_lines" | grep -q '[[:space:]]unauthorized'; then
+          echo "Device unauthorized — accept the USB debugging prompt on your device."
+          exit 1
+        fi
+        device_count="$(printf '%s\n' "$device_lines" | awk '$2 == "device" {count++} END {print count+0}')"
+        if [ "$device_count" -gt 1 ]; then
+          echo "Multiple devices detected — set ANDROID_SERIAL or use 'adb -s <serial>'."
+          adb devices -l
+          exit 1
+        fi
+      fi
+      pid="$(adb shell pidof -s dev.klazomenai.deckchat | tr -d '\r')"
+      if [ -z "$pid" ]; then
+        echo "DeckChat is not running — launch the app on your device first."
+        exit 1
+      fi
+      adb logcat --pid="$pid" "$@"
+    '';
+
+    devices.exec = ''
+      adb devices -l
+    '';
+
+    download-models.exec = ''
+      set -euo pipefail
+      REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+      "$REPO_ROOT/scripts/download-stt-models.sh"
+      "$REPO_ROOT/scripts/download-tts-models.sh"
+    '';
   };
 
   enterShell = ''
@@ -50,11 +99,21 @@ in
     echo "ANDROID_HOME: $ANDROID_HOME"
     echo "JAVA_HOME:    $JAVA_HOME"
     echo ""
-    echo "Commands:"
-    echo "  wrapper                    — Regenerate Gradle wrapper (9.4.0)"
-    echo "  check-gms                  — Audit for Google Play Services dependencies"
+    echo "Build:"
     echo "  ./gradlew assembleDebug    — Build debug APK"
     echo "  ./gradlew lint test        — Lint + unit tests"
+    echo "  install-debug              — Build + install debug APK to device"
+    echo ""
+    echo "Device:"
+    echo "  devices                    — List connected devices (adb)"
+    echo "  logcat                     — Filtered logcat for DeckChat"
+    echo "  device-test                — Run instrumented tests on device"
+    echo "  adb                        — Android Debug Bridge (direct)"
+    echo ""
+    echo "Setup:"
+    echo "  download-models            — Download STT + TTS model files"
+    echo "  wrapper                    — Regenerate Gradle wrapper (9.4.0)"
+    echo "  check-gms                  — Audit for Google Play Services deps"
     echo ""
   '';
 }
