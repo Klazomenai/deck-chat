@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.matrix.sdk.android)
     implementation(libs.sherpa.onnx.android)
     implementation(libs.kotlinx.coroutines.android)
 
