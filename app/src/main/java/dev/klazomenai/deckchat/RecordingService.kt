@@ -1,5 +1,6 @@
 package dev.klazomenai.deckchat
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -69,6 +70,10 @@ class RecordingService : Service() {
             return
         }
 
+        // RECORD_AUDIO permission is requested by the Activity at runtime.
+        // This service is only started from HeadsetButtonReceiver after the
+        // user has granted the permission.
+        @SuppressLint("MissingPermission")
         audioRecord = AudioRecord(
             MediaRecorder.AudioSource.MIC,
             SAMPLE_RATE,
