@@ -34,6 +34,22 @@
             </intent-filter>
         </activity>
 
+        <!-- Headset button → start/stop RecordingService.
+             exported=true required: system delivers ACTION_MEDIA_BUTTON from outside the app.
+             See issue #17 for MediaSession spike (future replacement). -->
+        <receiver
+            android:name=".HeadsetButtonReceiver"
+            android:exported="true">
+            <intent-filter android:priority="100">
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Foreground service for audio capture (16kHz mono PCM). -->
+        <service
+            android:name=".RecordingService"
+            android:foregroundServiceType="microphone" />
+
     </application>
 
 </manifest>
