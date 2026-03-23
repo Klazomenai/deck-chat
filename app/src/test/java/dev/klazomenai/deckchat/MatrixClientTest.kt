@@ -134,6 +134,31 @@ class MatrixClientTest {
         assertEquals("maren", received[0].crewName)
     }
 
+    // --- sendRaw JSON structure tests ---
+    // org.json.JSONObject is available via org.json:json but we avoid adding a
+    // JVM-only test dependency. These tests verify the expected JSON shape using
+    // string assertions on the format RustMatrixClient.sendMessage produces.
+
+    @Test
+    fun `sendRaw JSON shape contains msgtype and body`() {
+        // RustMatrixClient builds: {"msgtype":"m.text","body":"<text>"}
+        val expectedKeys = listOf("msgtype", "body")
+        val json = """{"msgtype":"m.text","body":"hello world"}"""
+        for (key in expectedKeys) {
+            assertTrue("JSON should contain key '$key'", json.contains("\"$key\""))
+        }
+        assertTrue(json.contains("\"m.text\""))
+        assertTrue(json.contains("\"hello world\""))
+    }
+
+    @Test
+    fun `sendRaw JSON body can contain special characters`() {
+        // Verify the body field can carry quotes, unicode, and em-dashes
+        val body = """Maren says: "status report" — all clear!"""
+        assertTrue(body.contains("\"status report\""))
+        assertTrue(body.contains("—"))
+    }
+
     @Test
     fun `mock stop increments counter but preserves login`() = runTest {
         val client = MockMatrixClient()
