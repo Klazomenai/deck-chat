@@ -135,8 +135,9 @@ class MatrixClientTest {
     }
 
     // --- sendRaw JSON structure tests ---
-    // JSONObject is Android-only; these tests verify the expected JSON shape
-    // using string assertions on the format RustMatrixClient.sendMessage produces.
+    // org.json.JSONObject is available via org.json:json but we avoid adding a
+    // JVM-only test dependency. These tests verify the expected JSON shape using
+    // string assertions on the format RustMatrixClient.sendMessage produces.
 
     @Test
     fun `sendRaw JSON shape contains msgtype and body`() {

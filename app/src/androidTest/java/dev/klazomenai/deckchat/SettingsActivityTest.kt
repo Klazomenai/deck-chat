@@ -2,7 +2,7 @@ package dev.klazomenai.deckchat
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -23,8 +23,8 @@ class SettingsActivityTest {
     // - Invalid URL shows error
 
     @Test
-    fun contextIsAvailable() {
+    fun instrumentationTargetsCorrectPackage() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        assertNotNull(context)
+        assertEquals("dev.klazomenai.deckchat", context.packageName)
     }
 }
