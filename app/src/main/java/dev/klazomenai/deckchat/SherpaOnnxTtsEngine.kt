@@ -88,8 +88,7 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
         }
     }
 
-    private fun getOrCreateTts(crewName: String): OfflineTts {
-        val crew = CrewRegistry.lookup(crewName)
+    private fun getOrCreateTts(crew: CrewMember): OfflineTts {
         return synchronized(ttsInstances) {
             ttsInstances.getOrPut(crew.name) {
                 val ttsDir = copyVoiceToDisk(crew.voiceDir)
@@ -114,7 +113,7 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
 
     override suspend fun speak(crewName: String, text: String) = withContext(Dispatchers.IO) {
         val crew = CrewRegistry.lookup(crewName)
-        val tts = getOrCreateTts(crewName)
+        val tts = getOrCreateTts(crew)
         val announcement = "${crew.displayName}: $text"
         val audio = tts.generate(text = announcement, sid = 0, speed = 1.0f)
 

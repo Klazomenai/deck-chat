@@ -50,11 +50,11 @@ object CrewRegistry {
      * Returns the default crew member (Maren) if the name is unknown.
      */
     fun lookup(crewName: String): CrewMember =
-        members[crewName.lowercase()] ?: default
+        members[crewName.lowercase(java.util.Locale.ROOT)] ?: default
 
     /** Returns true if the crew name is registered (case-insensitive). */
     fun isKnown(crewName: String): Boolean =
-        members.containsKey(crewName.lowercase())
+        members.containsKey(crewName.lowercase(java.util.Locale.ROOT))
 
     /** Returns all registered crew names (lowercase). */
     fun allNames(): Set<String> = members.keys
