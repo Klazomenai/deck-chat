@@ -32,7 +32,12 @@ class HeadsetButtonReceiver : BroadcastReceiver() {
         when (event.action) {
             KeyEvent.ACTION_DOWN -> {
                 serviceIntent.action = RecordingService.ACTION_START
-                ContextCompat.startForegroundService(context, serviceIntent)
+                try {
+                    ContextCompat.startForegroundService(context, serviceIntent)
+                } catch (_: IllegalStateException) {
+                    // Foreground service start may be blocked by background restrictions
+                    // on Android 12+ (ForegroundServiceStartNotAllowedException).
+                }
             }
             KeyEvent.ACTION_UP -> {
                 serviceIntent.action = RecordingService.ACTION_STOP

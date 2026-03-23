@@ -100,7 +100,17 @@ class RecordingService : Service() {
 
         isRecording = true
         audioBuffer.clear()
-        audioRecord?.startRecording()
+        try {
+            audioRecord?.startRecording()
+        } catch (_: IllegalStateException) {
+            // Mic busy or audio policy blocked recording
+            isRecording = false
+            audioRecord?.release()
+            audioRecord = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
 
         recordingThread = Thread {
             val buffer = ByteArray(bufferSize)
