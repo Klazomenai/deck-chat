@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">DeckChat</string>
+    <string name="settings_title">Settings</string>
+    <string name="homeserver_url_label">Homeserver URL</string>
+    <string name="homeserver_url_hint">https://matrix.example.com</string>
+    <string name="save_button">Save</string>
+    <string name="session_heading">Matrix Session</string>
+    <string name="session_active">Logged in as %1$s</string>
+    <string name="session_none">No active session</string>
+    <string name="clear_session_button">Clear Session</string>
 </resources>
