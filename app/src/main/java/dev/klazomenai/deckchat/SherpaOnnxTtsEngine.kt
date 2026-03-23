@@ -62,6 +62,10 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
         require(assetFiles.contains("espeak-ng-data")) {
             "TTS espeak-ng-data not found in $assetPath — run ./gradlew downloadTtsModels first"
         }
+        val espeakAssets = context.assets.list("$assetPath/espeak-ng-data")
+        require(!espeakAssets.isNullOrEmpty()) {
+            "TTS espeak-ng-data is empty in $assetPath — run ./gradlew downloadTtsModels first"
+        }
 
         copyAssetsRecursive(assetPath, destDir)
         return destDir
