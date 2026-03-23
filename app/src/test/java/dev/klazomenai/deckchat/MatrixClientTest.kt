@@ -37,6 +37,11 @@ class MockMatrixClient : MatrixClient {
         onMessageCallback = onMessage
     }
 
+    var listenedRoomId: String? = null
+    override suspend fun listenToRoom(roomId: String) {
+        listenedRoomId = roomId
+    }
+
     override suspend fun stop() {
         stopCount++
     }

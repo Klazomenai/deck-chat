@@ -92,12 +92,7 @@ class RustMatrixClient(
         }
     }
 
-    /**
-     * Attaches a timeline listener to a specific room.
-     * Call after [startSync] to receive messages from the given room.
-     * Closes any previously registered listener before attaching the new one.
-     */
-    suspend fun listenToRoom(roomId: String) {
+    override suspend fun listenToRoom(roomId: String) {
         timelineHandle?.close()
         timelineHandle = null
 
