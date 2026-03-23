@@ -16,6 +16,7 @@ interface MatrixClient {
     suspend fun restoreSession()
     suspend fun sendMessage(roomId: String, text: String)
     fun startSync(onMessage: (CrewMessage) -> Unit)
+    /** Stops syncing. Does NOT clear the session or log out. */
     suspend fun stop()
     fun isLoggedIn(): Boolean
 }

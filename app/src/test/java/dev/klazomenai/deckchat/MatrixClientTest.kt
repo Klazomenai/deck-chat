@@ -39,7 +39,6 @@ class MockMatrixClient : MatrixClient {
 
     override suspend fun stop() {
         stopCount++
-        loggedIn = false
     }
 
     override fun isLoggedIn(): Boolean = loggedIn
@@ -130,12 +129,12 @@ class MatrixClientTest {
     }
 
     @Test
-    fun `mock stop increments counter and clears login`() = runTest {
+    fun `mock stop increments counter but preserves login`() = runTest {
         val client = MockMatrixClient()
         client.login("https://matrix.example.com", "user", "pass")
         assertTrue(client.isLoggedIn())
         client.stop()
-        assertFalse(client.isLoggedIn())
+        assertTrue(client.isLoggedIn()) // stop() stops syncing, not logout
         assertEquals(1, client.stopCount)
     }
 }

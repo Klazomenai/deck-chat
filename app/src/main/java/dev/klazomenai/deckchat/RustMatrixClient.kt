@@ -8,7 +8,6 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.matrix.rustcomponents.sdk.Client
 import org.matrix.rustcomponents.sdk.ClientBuilder
-import org.matrix.rustcomponents.sdk.EventTimelineItem
 import org.matrix.rustcomponents.sdk.MessageType
 import org.matrix.rustcomponents.sdk.MsgLikeKind
 import org.matrix.rustcomponents.sdk.Session
@@ -21,18 +20,16 @@ import org.matrix.rustcomponents.sdk.TimelineItem
 import org.matrix.rustcomponents.sdk.TimelineItemContent
 import org.matrix.rustcomponents.sdk.TimelineListener
 import java.io.File
-import java.util.UUID
 
 /**
  * Matrix client implementation backed by matrix-rust-sdk (UniFFI Kotlin bindings).
  *
  * Uses Simplified Sliding Sync (MSC4186) exclusively — no /sync v2 fallback.
- * E2EE is automatic with SQLite store persistence.
- * Sends messages via [sendRaw] to include custom event fields.
+ * E2EE is automatic with SQLite store persistence (SDK manages encryption internally).
+ * Sends messages via [Room.sendRaw] for standard m.room.message events.
  * Receives messages via [TimelineListener] and parses body-prefix convention.
  *
- * Session tokens are persisted via [SecureStorage]. SQLite store passphrase
- * is generated on first login and stored in Android Keystore.
+ * Session tokens are persisted via [SecureStorage].
  */
 class RustMatrixClient(
     private val context: Context,
@@ -85,36 +82,39 @@ class RustMatrixClient(
             syncService = service
             service.start()
         }
-
-        // Timeline listener is set up per-room when messages arrive.
-        // For MVP, the room ID is provided externally and the listener
-        // is attached in the calling code. This method starts the sync
-        // loop — room-specific listening is wired by the Activity.
         this.onMessageCallback = onMessage
     }
 
     /**
      * Attaches a timeline listener to a specific room.
      * Call after [startSync] to receive messages from the given room.
+     * Closes any previously registered listener before attaching the new one.
      */
     suspend fun listenToRoom(roomId: String) {
+        timelineHandle?.close()
+        timelineHandle = null
+
         val room = requireClient().getRoom(roomId)
             ?: throw IllegalArgumentException("Room not found: $roomId")
         val tl = room.timeline()
         timeline = tl
 
-        val myUserId = requireClient().userId()
         timelineHandle = tl.addListener(object : TimelineListener {
             override fun onUpdate(diff: List<TimelineDiff>) {
                 for (d in diff) {
                     extractNewItems(d).forEach { item ->
-                        processTimelineItem(item, myUserId)
+                        processTimelineItem(item)
                     }
                 }
             }
         })
     }
 
+    /**
+     * Stops syncing. Does NOT clear the session — call [SecureStorage.clearSession]
+     * to log out fully. After stop(), [isLoggedIn] remains true if the session is
+     * still stored; call [startSync] to resume.
+     */
     override suspend fun stop() {
         timelineHandle?.close()
         timelineHandle = null
@@ -133,17 +133,12 @@ class RustMatrixClient(
         val dataDir = File(context.filesDir, "matrix-data").apply { mkdirs() }
         val cacheDir = File(context.cacheDir, "matrix-cache").apply { mkdirs() }
 
-        val passphrase = storage.sqlitePassphrase ?: run {
-            val generated = UUID.randomUUID().toString()
-            storage.sqlitePassphrase = generated
-            generated
-        }
-
+        // SDK manages SQLite store encryption internally via sessionPaths.
+        // No explicit passphrase method exists on ClientBuilder.
         return ClientBuilder()
             .homeserverUrl(homeserverUrl)
             .slidingSyncVersionBuilder(SlidingSyncVersionBuilder.DISCOVER_NATIVE)
             .sessionPaths(dataDir.absolutePath, cacheDir.absolutePath)
-            .passphrase(passphrase)
             .build()
     }
 
@@ -187,27 +182,18 @@ class RustMatrixClient(
         }
     }
 
-    private fun processTimelineItem(item: TimelineItem, myUserId: String) {
+    private fun processTimelineItem(item: TimelineItem) {
         val event = item.asEvent() ?: return
         if (event.isOwn) return
         val content = event.content
         if (content !is TimelineItemContent.MsgLike) return
-        val msgLike = content.content
-        val kind = msgLike.kind
+        val kind = content.content.kind
         if (kind !is MsgLikeKind.Message) return
-        val msgContent = kind.content
-        val msgType = msgContent.msgType
+        val msgType = kind.content.msgType
         if (msgType !is MessageType.Text) return
 
         val body = msgType.content.body
         val crewMessage = parseCrewMessage(body, event.sender) ?: return
         onMessageCallback?.invoke(crewMessage)
-    }
-
-    private fun ClientBuilder.passphrase(passphrase: String): ClientBuilder {
-        // The passphrase is set via the session paths — the SDK encrypts
-        // the SQLite store with it when sessionPaths is used.
-        // Note: if the SDK adds an explicit passphrase method, use it here.
-        return this
     }
 }
