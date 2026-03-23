@@ -48,6 +48,20 @@ tasks.register<Exec>("downloadSttModels") {
     }
 }
 
+// Downloads Piper TTS voice models from k2-fsa/sherpa-onnx GitHub releases.
+// Models are gitignored — run this task manually before building for device use.
+// CI builds succeed without models since tests use MockTtsEngine (no JNI).
+tasks.register<Exec>("downloadTtsModels") {
+    group = "DeckChat"
+    description = "Download Piper TTS voice models for on-device speech synthesis"
+    workingDir = rootProject.rootDir
+    commandLine("bash", "${rootProject.rootDir}/scripts/download-tts-models.sh")
+    onlyIf {
+        !file("src/main/assets/tts/vits-piper-en_GB-cori-high/en_GB-cori-high.onnx").exists() ||
+        !file("src/main/assets/tts/vits-piper-en_US-lessac-high/en_US-lessac-high.onnx").exists()
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
