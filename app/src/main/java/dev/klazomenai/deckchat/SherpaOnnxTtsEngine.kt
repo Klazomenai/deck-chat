@@ -89,12 +89,11 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
     }
 
     private fun getOrCreateTts(crewName: String): OfflineTts {
+        val crew = CrewRegistry.lookup(crewName)
         return synchronized(ttsInstances) {
-            ttsInstances.getOrPut(crewName) {
-                val voiceDir = CREW_VOICES[crewName]
-                    ?: throw IllegalArgumentException("Unknown crew member: $crewName. Known: ${CREW_VOICES.keys}")
-                val ttsDir = copyVoiceToDisk(voiceDir)
-                val modelName = voiceDir.removePrefix("vits-piper-")
+            ttsInstances.getOrPut(crew.name) {
+                val ttsDir = copyVoiceToDisk(crew.voiceDir)
+                val modelName = crew.voiceDir.removePrefix("vits-piper-")
 
                 val config = OfflineTtsConfig(
                     model = OfflineTtsModelConfig(
@@ -114,8 +113,9 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
     }
 
     override suspend fun speak(crewName: String, text: String) = withContext(Dispatchers.IO) {
+        val crew = CrewRegistry.lookup(crewName)
         val tts = getOrCreateTts(crewName)
-        val announcement = "${CREW_ANNOUNCEMENTS[crewName] ?: crewName}: $text"
+        val announcement = "${crew.displayName}: $text"
         val audio = tts.generate(text = announcement, sid = 0, speed = 1.0f)
 
         if (audio.samples.isEmpty()) return@withContext
@@ -165,18 +165,6 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
     }
 
     companion object {
-        // Maps crew name → voice model directory under assets/tts/
-        private val CREW_VOICES = mapOf(
-            "maren" to "vits-piper-en_GB-cori-high",
-            "crest" to "vits-piper-en_US-lessac-high",
-        )
-
-        // Maps crew name → spoken announcement prefix
-        private val CREW_ANNOUNCEMENTS = mapOf(
-            "maren" to "Maren",
-            "crest" to "Crest",
-        )
-
         init {
             System.loadLibrary("sherpa-onnx-jni")
         }
