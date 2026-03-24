@@ -73,13 +73,16 @@ use `./gradlew` and `adb` commands directly.
 
 ### Emulator
 
-The dev shell includes an Android emulator (API 35, x86_64). KVM is required
-for hardware acceleration:
+The dev shell includes an Android emulator (API 35, x86_64). On Linux, enable
+KVM for hardware acceleration (the emulator can run without it but will be slower):
 
 ```bash
-sudo usermod -aG kvm $USER    # one-time setup (requires logout/login)
-emulator                       # creates AVD on first run, then launches
+sudo usermod -aG kvm $USER    # one-time setup on Linux (requires logout/login)
+emulator                       # devenv shell — creates AVD on first run, then launches
 ```
+
+The `emulator` command is a devenv convenience script. `nix develop` users can
+create and launch the AVD manually with `avdmanager` and `$ANDROID_HOME/emulator/emulator`.
 
 SettingsActivity, HeadsetButtonReceiver, and permission-denial tests run on emulator.
 Bluetooth and microphone-dependent tests skip (no mic/BT hardware).

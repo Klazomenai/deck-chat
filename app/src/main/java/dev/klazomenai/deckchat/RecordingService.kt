@@ -53,6 +53,12 @@ class RecordingService : Service() {
     private fun startRecording() {
         if (isRecording) return
 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED) {
+            stopSelf()
+            return
+        }
+
         val notification = buildNotification()
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -64,15 +70,7 @@ class RecordingService : Service() {
                 startForeground(NOTIFICATION_ID, notification)
             }
         } catch (_: SecurityException) {
-            // API 34+ throws SecurityException from startForeground() when
-            // RECORD_AUDIO is not granted for FOREGROUND_SERVICE_TYPE_MICROPHONE.
-            stopSelf()
-            return
-        }
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-            != PackageManager.PERMISSION_GRANTED) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            // Race-condition guard: permission revoked between check and startForeground.
             stopSelf()
             return
         }
