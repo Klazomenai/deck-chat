@@ -61,8 +61,8 @@ devenv shell        # recommended — includes convenience scripts
 nix develop         # alternative — Gradle + SDK only, no convenience scripts
 ```
 
-`devenv shell` provides JDK 17, Gradle, Android SDK (build-tools 36, platform 36),
-`adb`, and convenience scripts. On entry it prints all available commands.
+`devenv shell` provides JDK 17, Gradle, Android SDK (build-tools 36, platforms 35 and 36),
+`adb`, emulator, and convenience scripts. On entry it prints all available commands.
 `nix develop` provides the same toolchain but without the devenv scripts —
 use `./gradlew` and `adb` commands directly.
 
@@ -98,7 +98,7 @@ install-debug               # build + install to connected device
 
 ```bash
 ./gradlew lint test          # lint + unit tests (no device needed)
-device-test                  # instrumented tests on connected device
+device-test                  # instrumented tests on device or emulator
 ```
 
 Unit tests use mock engines (`MockSttEngine`, `MockTtsEngine`) — no JNI or
