@@ -106,7 +106,7 @@ in
           --force
       fi
       echo "Starting emulator '$AVD_NAME'..."
-      emulator -avd "$AVD_NAME" -no-snapshot-save "$@"
+      "$ANDROID_HOME/emulator/emulator" -avd "$AVD_NAME" -no-snapshot-save "$@"
     '';
   };
 
