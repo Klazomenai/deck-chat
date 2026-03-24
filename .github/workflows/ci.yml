@@ -63,7 +63,12 @@ jobs:
           api-level: 35
           arch: x86_64
           target: google_apis
-          script: ./gradlew connectedDebugAndroidTest
+          script: |
+            adb shell wm dismiss-keyguard
+            adb shell settings put global window_animation_scale 0.0
+            adb shell settings put global transition_animation_scale 0.0
+            adb shell settings put global animator_duration_scale 0.0
+            ./gradlew connectedDebugAndroidTest
         timeout-minutes: 15
 
       - name: Upload test results
