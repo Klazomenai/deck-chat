@@ -1,8 +1,10 @@
 package dev.klazomenai.deckchat
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.view.KeyEvent
 import androidx.core.content.ContextCompat
@@ -31,6 +33,15 @@ class HeadsetButtonReceiver : BroadcastReceiver() {
         val serviceIntent = Intent(context, RecordingService::class.java)
         when (event.action) {
             KeyEvent.ACTION_DOWN -> {
+                // Check RECORD_AUDIO before startForegroundService — the manifest
+                // declares foregroundServiceType="microphone", so any startForeground
+                // call throws SecurityException on API 34+ without this permission.
+                // Without the check, the service can't satisfy the startForegroundService
+                // contract and Android throws ForegroundServiceDidNotStartInTimeException.
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                    return
+                }
                 serviceIntent.action = RecordingService.ACTION_START
                 try {
                     ContextCompat.startForegroundService(context, serviceIntent)
