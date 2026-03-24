@@ -22,11 +22,13 @@
           };
           androidComposition = pkgs.androidenv.composeAndroidPackages {
             buildToolsVersions = [ "36.0.0" ];
-            platformVersions = [ "36" ];
+            platformVersions = [ "35" "36" ];
             includeNDK = false;
-            includeEmulator = false;
+            includeEmulator = true;
             includeSources = false;
-            includeSystemImages = false;
+            includeSystemImages = true;
+            systemImageTypes = [ "google_apis" ];
+            abiVersions = [ "x86_64" ];
           };
         in
         {

@@ -71,6 +71,19 @@ use `./gradlew` and `adb` commands directly.
 > can use the underlying `./gradlew` and `adb` equivalents shown in their
 > descriptions.
 
+### Emulator
+
+The dev shell includes an Android emulator (API 35, x86_64). KVM is required
+for hardware acceleration:
+
+```bash
+sudo usermod -aG kvm $USER    # one-time setup (requires logout/login)
+emulator                       # creates AVD on first run, then launches
+```
+
+SettingsActivity and HeadsetButtonReceiver tests run on the emulator.
+RecordingService and Bluetooth tests skip (no mic/BT hardware).
+
 ### Building
 
 ```bash

@@ -3,11 +3,13 @@
 let
   androidComposition = pkgs.androidenv.composeAndroidPackages {
     buildToolsVersions = [ "36.0.0" ];
-    platformVersions = [ "36" ];
+    platformVersions = [ "35" "36" ];
     includeNDK = false;
-    includeEmulator = false;
+    includeEmulator = true;
     includeSources = false;
-    includeSystemImages = false;
+    includeSystemImages = true;
+    systemImageTypes = [ "google_apis" ];
+    abiVersions = [ "x86_64" ];
   };
 in
 
@@ -90,6 +92,22 @@ in
       "$REPO_ROOT/scripts/download-stt-models.sh"
       "$REPO_ROOT/scripts/download-tts-models.sh"
     '';
+
+    emulator.exec = ''
+      set -euo pipefail
+      AVD_NAME="deckchat-test"
+      AVD_DIR="$HOME/.android/avd/$AVD_NAME.avd"
+      if [ ! -d "$AVD_DIR" ]; then
+        echo "Creating AVD '$AVD_NAME' (API 35, x86_64)..."
+        avdmanager create avd \
+          --name "$AVD_NAME" \
+          --package "system-images;android-35;google_apis;x86_64" \
+          --device "pixel_6" \
+          --force
+      fi
+      echo "Starting emulator '$AVD_NAME'..."
+      emulator -avd "$AVD_NAME" -no-snapshot-save "$@"
+    '';
   };
 
   enterShell = ''
@@ -106,6 +124,7 @@ in
     echo ""
     echo "Device:"
     echo "  devices                    — List connected devices (adb)"
+    echo "  emulator                   — Launch Android emulator (API 35)"
     echo "  logcat                     — Filtered logcat for DeckChat"
     echo "  device-test                — Run instrumented tests on device"
     echo "  adb                        — Android Debug Bridge (direct)"
@@ -115,5 +134,10 @@ in
     echo "  wrapper                    — Regenerate Gradle wrapper (9.4.0)"
     echo "  check-gms                  — Audit for Google Play Services deps"
     echo ""
+    if [ ! -w /dev/kvm ] 2>/dev/null; then
+      echo "⚠  /dev/kvm not accessible — emulator will be slow without KVM."
+      echo "   Fix: sudo usermod -aG kvm $USER && newgrp kvm"
+      echo ""
+    fi
   '';
 }
