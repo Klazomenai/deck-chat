@@ -172,9 +172,11 @@ class RecordingServiceTest {
         // service stops itself immediately (RECORD_AUDIO denied).
         try {
             ContextCompat.startForegroundService(context, intent)
-        } catch (_: Exception) {
-            // Background restrictions may prevent starting — swallow to keep the test
-            // focused on graceful handling.
+        } catch (e: Exception) {
+            assumeTrue(
+                "RecordingService could not be started (likely background restrictions): ${e.message}",
+                false,
+            )
         }
 
         // Brief grace period for the service to start and stop itself.

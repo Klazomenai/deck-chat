@@ -53,13 +53,18 @@ class RecordingService : Service() {
     private fun startRecording() {
         if (isRecording) return
 
+        val notification = buildNotification()
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
+            // Satisfy startForegroundService contract (must call startForeground)
+            // then stop immediately. Use default type — microphone type would throw
+            // SecurityException on API 34+ without RECORD_AUDIO.
+            startForeground(NOTIFICATION_ID, notification)
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return
         }
-
-        val notification = buildNotification()
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(
