@@ -167,12 +167,13 @@ class RecordingServiceTest {
         val intent = Intent(context, RecordingService::class.java).apply {
             action = RecordingService.ACTION_START
         }
-        serviceRule.startService(intent)
+        // Use context.startService directly — ServiceTestRule.startService tries to
+        // bind and times out when the service stops itself immediately (API 34+
+        // SecurityException from startForeground without RECORD_AUDIO).
+        context.startService(intent)
 
-        // Brief grace period for the notification to post before we check it's gone.
-        // The service calls startForeground then checks RECORD_AUDIO — the notification
-        // briefly appears before stopForeground + stopSelf.
-        Thread.sleep(200)
+        // Brief grace period for the service to start and stop itself.
+        Thread.sleep(500)
 
         // Service should stop itself — no crash, no lingering notification
         assertTrue(
