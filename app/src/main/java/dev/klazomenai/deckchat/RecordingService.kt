@@ -54,18 +54,27 @@ class RecordingService : Service() {
         if (isRecording) return
 
         val notification = buildNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                NOTIFICATION_ID, notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
-        }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            // Cannot call startForeground — manifest foregroundServiceType="microphone"
+            // triggers SecurityException on API 34+ without RECORD_AUDIO regardless of
+            // the type passed in code. Callers must check permission before using
+            // startForegroundService; when started via plain startService, stopSelf is safe.
+            stopSelf()
+            return
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (_: SecurityException) {
+            // Race-condition guard: permission revoked between check and startForeground.
             stopSelf()
             return
         }

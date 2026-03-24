@@ -10,16 +10,15 @@ import org.junit.runner.RunWith
 
 /**
  * Instrumented test for [HeadsetButtonReceiver].
- * Invokes [HeadsetButtonReceiver.onReceive] directly on a physical device to verify
- * it does not crash. We call onReceive directly rather than sending a real broadcast
- * because ACTION_MEDIA_BUTTON is a protected broadcast on modern Android and would
- * be intercepted by the system media session. Manifest registration is verified
+ * Invokes [HeadsetButtonReceiver.onReceive] directly to verify it does not crash.
+ * We call onReceive directly rather than sending a real broadcast because
+ * ACTION_MEDIA_BUTTON is a protected broadcast on modern Android and would be
+ * intercepted by the system media session. Manifest registration is verified
  * implicitly by the app functioning on-device.
  *
  * Full service lifecycle testing is covered in [RecordingServiceTest].
  *
  * Run with: ./gradlew connectedDebugAndroidTest
- * NOT run in CI (no device).
  */
 @RunWith(AndroidJUnit4::class)
 class HeadsetButtonReceiverInstrumentedTest {

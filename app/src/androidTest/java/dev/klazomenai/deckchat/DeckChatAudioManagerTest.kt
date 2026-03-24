@@ -18,10 +18,10 @@ import org.junit.runner.RunWith
 
 /**
  * Instrumented tests for [DeckChatAudioManager].
- * Requires a physical device with Bluetooth.
+ * Requires a physical device with Bluetooth for full coverage.
  *
  * Run with: ./gradlew connectedDebugAndroidTest
- * NOT run in CI (no device).
+ * Skipped on emulators when Bluetooth hardware or permissions are unavailable.
  */
 @RunWith(AndroidJUnit4::class)
 class DeckChatAudioManagerTest {

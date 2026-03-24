@@ -25,10 +25,11 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Instrumented tests for [RecordingService].
- * Requires a physical device with microphone access.
+ * Runs on emulator or physical device. Tests requiring microphone access
+ * (actionStart, actionStop) are skipped on emulator via [assumeTrue] guards.
+ * [permissionDeniedStopsGracefully] runs on emulator (RECORD_AUDIO denied by default).
  *
  * Run with: ./gradlew connectedDebugAndroidTest
- * NOT run in CI (no device).
  */
 @RunWith(AndroidJUnit4::class)
 class RecordingServiceTest {
@@ -162,17 +163,25 @@ class RecordingServiceTest {
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED,
         )
-        assumeNotificationsAvailable()
 
         val intent = Intent(context, RecordingService::class.java).apply {
             action = RecordingService.ACTION_START
         }
-        serviceRule.startService(intent)
+        // Use plain startService — startForegroundService would require calling
+        // startForeground(), but the manifest foregroundServiceType="microphone"
+        // triggers SecurityException without RECORD_AUDIO. Plain startService has
+        // no such contract; the service checks permission and calls stopSelf().
+        try {
+            context.startService(intent)
+        } catch (e: IllegalStateException) {
+            assumeTrue(
+                "Background service start restricted on this device: ${e.message}",
+                false,
+            )
+        }
 
-        // Brief grace period for the notification to post before we check it's gone.
-        // The service calls startForeground then checks RECORD_AUDIO — the notification
-        // briefly appears before stopForeground + stopSelf.
-        Thread.sleep(200)
+        // Brief grace period for the service to start and stop itself.
+        Thread.sleep(500)
 
         // Service should stop itself — no crash, no lingering notification
         assertTrue(

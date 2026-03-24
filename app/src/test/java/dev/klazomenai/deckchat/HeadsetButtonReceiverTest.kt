@@ -1,9 +1,11 @@
 package dev.klazomenai.deckchat
 
+import android.Manifest
 import android.content.Intent
 import android.view.KeyEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -15,6 +17,11 @@ class HeadsetButtonReceiverTest {
 
     private val context = RuntimeEnvironment.getApplication()
     private val receiver = HeadsetButtonReceiver()
+
+    @Before
+    fun setUp() {
+        shadowOf(context).grantPermissions(Manifest.permission.RECORD_AUDIO)
+    }
 
     private fun mediaButtonIntent(keyCode: Int, action: Int): Intent {
         val event = KeyEvent(action, keyCode)
@@ -72,6 +79,16 @@ class HeadsetButtonReceiverTest {
         val intent = Intent(Intent.ACTION_MEDIA_BUTTON)
         // No EXTRA_KEY_EVENT
         receiver.onReceive(context, intent)
+
+        val started = shadowOf(context).nextStartedService
+        assertNull(started)
+    }
+
+    @Test
+    fun `ACTION_DOWN without RECORD_AUDIO is no-op`() {
+        shadowOf(context).denyPermissions(Manifest.permission.RECORD_AUDIO)
+
+        receiver.onReceive(context, mediaButtonIntent(KeyEvent.KEYCODE_HEADSETHOOK, KeyEvent.ACTION_DOWN))
 
         val started = shadowOf(context).nextStartedService
         assertNull(started)
