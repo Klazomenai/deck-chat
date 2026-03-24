@@ -167,17 +167,11 @@ class RecordingServiceTest {
         val intent = Intent(context, RecordingService::class.java).apply {
             action = RecordingService.ACTION_START
         }
-        // Use ContextCompat.startForegroundService (matching production path) instead
-        // of ServiceTestRule.startService, which tries to bind and times out when the
-        // service stops itself immediately (RECORD_AUDIO denied).
-        try {
-            ContextCompat.startForegroundService(context, intent)
-        } catch (e: Exception) {
-            assumeTrue(
-                "RecordingService could not be started (likely background restrictions): ${e.message}",
-                false,
-            )
-        }
+        // Use plain startService — startForegroundService would require calling
+        // startForeground(), but the manifest foregroundServiceType="microphone"
+        // triggers SecurityException without RECORD_AUDIO. Plain startService has
+        // no such contract; the service checks permission and calls stopSelf().
+        context.startService(intent)
 
         // Brief grace period for the service to start and stop itself.
         Thread.sleep(500)

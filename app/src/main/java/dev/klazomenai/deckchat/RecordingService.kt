@@ -57,11 +57,10 @@ class RecordingService : Service() {
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
-            // Satisfy startForegroundService contract (must call startForeground)
-            // then stop immediately. Use default type — microphone type would throw
-            // SecurityException on API 34+ without RECORD_AUDIO.
-            startForeground(NOTIFICATION_ID, notification)
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            // Cannot call startForeground — manifest foregroundServiceType="microphone"
+            // triggers SecurityException on API 34+ without RECORD_AUDIO regardless of
+            // the type passed in code. Callers must check permission before using
+            // startForegroundService; when started via plain startService, stopSelf is safe.
             stopSelf()
             return
         }
