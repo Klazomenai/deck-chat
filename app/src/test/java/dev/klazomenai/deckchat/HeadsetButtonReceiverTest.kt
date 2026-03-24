@@ -83,4 +83,14 @@ class HeadsetButtonReceiverTest {
         val started = shadowOf(context).nextStartedService
         assertNull(started)
     }
+
+    @Test
+    fun `ACTION_DOWN without RECORD_AUDIO is no-op`() {
+        shadowOf(context).denyPermissions(Manifest.permission.RECORD_AUDIO)
+
+        receiver.onReceive(context, mediaButtonIntent(KeyEvent.KEYCODE_HEADSETHOOK, KeyEvent.ACTION_DOWN))
+
+        val started = shadowOf(context).nextStartedService
+        assertNull(started)
+    }
 }

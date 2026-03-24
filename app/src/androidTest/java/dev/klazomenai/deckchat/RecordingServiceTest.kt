@@ -171,7 +171,14 @@ class RecordingServiceTest {
         // startForeground(), but the manifest foregroundServiceType="microphone"
         // triggers SecurityException without RECORD_AUDIO. Plain startService has
         // no such contract; the service checks permission and calls stopSelf().
-        context.startService(intent)
+        try {
+            context.startService(intent)
+        } catch (e: IllegalStateException) {
+            assumeTrue(
+                "Background service start restricted on this device: ${e.message}",
+                false,
+            )
+        }
 
         // Brief grace period for the service to start and stop itself.
         Thread.sleep(500)
