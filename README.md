@@ -81,8 +81,8 @@ sudo usermod -aG kvm $USER    # one-time setup (requires logout/login)
 emulator                       # creates AVD on first run, then launches
 ```
 
-SettingsActivity and HeadsetButtonReceiver tests run on the emulator.
-RecordingService and Bluetooth tests skip (no mic/BT hardware).
+SettingsActivity, HeadsetButtonReceiver, and permission-denial tests run on emulator.
+Bluetooth and microphone-dependent tests skip (no mic/BT hardware).
 
 ### Building
 

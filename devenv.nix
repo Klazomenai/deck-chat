@@ -99,7 +99,7 @@ in
       AVD_DIR="$HOME/.android/avd/$AVD_NAME.avd"
       if [ ! -d "$AVD_DIR" ]; then
         echo "Creating AVD '$AVD_NAME' (API 35, x86_64)..."
-        avdmanager create avd \
+        echo no | avdmanager create avd \
           --name "$AVD_NAME" \
           --package "system-images;android-35;google_apis;x86_64" \
           --device "pixel_6" \
@@ -134,7 +134,7 @@ in
     echo "  wrapper                    — Regenerate Gradle wrapper (9.4.0)"
     echo "  check-gms                  — Audit for Google Play Services deps"
     echo ""
-    if [ ! -w /dev/kvm ] 2>/dev/null; then
+    if [ -e /dev/kvm ] && [ ! -w /dev/kvm ]; then
       echo "⚠  /dev/kvm not accessible — emulator will be slow without KVM."
       echo "   Fix: sudo usermod -aG kvm $USER && newgrp kvm"
       echo ""

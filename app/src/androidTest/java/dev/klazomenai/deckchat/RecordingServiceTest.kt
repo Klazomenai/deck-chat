@@ -25,10 +25,11 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Instrumented tests for [RecordingService].
- * Requires a physical device with microphone access.
+ * Runs on emulator or physical device. Tests requiring microphone access
+ * (actionStart, actionStop) are skipped on emulator via [assumeTrue] guards.
+ * [permissionDeniedStopsGracefully] runs on emulator (RECORD_AUDIO denied by default).
  *
  * Run with: ./gradlew connectedDebugAndroidTest
- * NOT run in CI (no device).
  */
 @RunWith(AndroidJUnit4::class)
 class RecordingServiceTest {
@@ -162,7 +163,6 @@ class RecordingServiceTest {
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED,
         )
-        assumeNotificationsAvailable()
 
         val intent = Intent(context, RecordingService::class.java).apply {
             action = RecordingService.ACTION_START

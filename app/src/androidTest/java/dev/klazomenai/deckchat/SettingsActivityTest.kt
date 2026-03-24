@@ -22,10 +22,9 @@ import org.junit.runner.RunWith
 
 /**
  * Instrumented tests for [SettingsActivity].
- * Requires a physical device.
+ * Runs on emulator or physical device.
  *
  * Run with: ./gradlew connectedDebugAndroidTest
- * NOT run in CI (no device).
  */
 @RunWith(AndroidJUnit4::class)
 class SettingsActivityTest {
