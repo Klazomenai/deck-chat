@@ -1,9 +1,11 @@
 package dev.klazomenai.deckchat
 
+import android.Manifest
 import android.content.Intent
 import android.view.KeyEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -15,6 +17,11 @@ class HeadsetButtonReceiverTest {
 
     private val context = RuntimeEnvironment.getApplication()
     private val receiver = HeadsetButtonReceiver()
+
+    @Before
+    fun setUp() {
+        shadowOf(context).grantPermissions(Manifest.permission.RECORD_AUDIO)
+    }
 
     private fun mediaButtonIntent(keyCode: Int, action: Int): Intent {
         val event = KeyEvent(action, keyCode)
