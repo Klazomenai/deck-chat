@@ -126,7 +126,7 @@ in
     echo "  devices                    — List connected devices (adb)"
     echo "  emulator                   — Launch Android emulator (API 35)"
     echo "  logcat                     — Filtered logcat for DeckChat"
-    echo "  device-test                — Run instrumented tests on device"
+    echo "  device-test                — Run instrumented tests on device or emulator"
     echo "  adb                        — Android Debug Bridge (direct)"
     echo ""
     echo "Setup:"

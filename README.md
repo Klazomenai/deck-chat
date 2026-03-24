@@ -61,7 +61,7 @@ devenv shell        # recommended — includes convenience scripts
 nix develop         # alternative — Gradle + SDK only, no convenience scripts
 ```
 
-`devenv shell` provides JDK 17, Gradle, Android SDK (build-tools 36, platforms 35+36),
+`devenv shell` provides JDK 17, Gradle, Android SDK (build-tools 36, platforms 35 and 36),
 `adb`, emulator, and convenience scripts. On entry it prints all available commands.
 `nix develop` provides the same toolchain but without the devenv scripts —
 use `./gradlew` and `adb` commands directly.
