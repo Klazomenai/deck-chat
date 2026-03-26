@@ -1,8 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-</LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp">
+
+        <!-- State indicator dot -->
+        <View
+            android:id="@+id/state_indicator"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:background="@drawable/state_indicator_circle"
+            android:layout_marginBottom="12dp"
+            android:importantForAccessibility="no" />
+
+        <!-- State label — live region announces changes for TalkBack -->
+        <TextView
+            android:id="@+id/state_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:accessibilityLiveRegion="polite"
+            android:text="@string/state_idle"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- Settings gear (top-right) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/settings_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/cd_settings"
+        android:src="@android:drawable/ic_menu_preferences"
+        app:fabSize="mini"
+        app:backgroundTint="@color/navy" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

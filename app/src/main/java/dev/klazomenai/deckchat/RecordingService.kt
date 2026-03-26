@@ -15,6 +15,10 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.os.IBinder
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import java.io.File
 import java.io.FileOutputStream
 
@@ -61,6 +65,7 @@ class RecordingService : Service() {
             // triggers SecurityException on API 34+ without RECORD_AUDIO regardless of
             // the type passed in code. Callers must check permission before using
             // startForegroundService; when started via plain startService, stopSelf is safe.
+            emitEvent(ServiceEvent.Error(PipelineError.PermissionDenied))
             stopSelf()
             return
         }
@@ -75,6 +80,7 @@ class RecordingService : Service() {
             }
         } catch (_: SecurityException) {
             // Race-condition guard: permission revoked between check and startForeground.
+            emitEvent(ServiceEvent.Error(PipelineError.PermissionDenied))
             stopSelf()
             return
         }
@@ -85,6 +91,8 @@ class RecordingService : Service() {
             AudioFormat.ENCODING_PCM_16BIT,
         )
         if (bufferSize <= 0) {
+            emitEvent(ServiceEvent.Error(PipelineError.AudioInitFailed))
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return
         }
@@ -103,6 +111,8 @@ class RecordingService : Service() {
         if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
             audioRecord?.release()
             audioRecord = null
+            emitEvent(ServiceEvent.Error(PipelineError.AudioInitFailed))
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return
         }
@@ -117,6 +127,7 @@ class RecordingService : Service() {
             audioRecord?.release()
             audioRecord = null
             stopForeground(STOP_FOREGROUND_REMOVE)
+            emitEvent(ServiceEvent.Error(PipelineError.MicBusy))
             stopSelf()
             return
         }
@@ -128,10 +139,23 @@ class RecordingService : Service() {
                 if (read > 0) {
                     audioBuffer.add(buffer.copyOf(read))
                 } else if (read < 0) {
-                    break // AudioRecord error — exit to avoid busy-spin
+                    // AudioRecord error — stop recording and emit error
+                    isRecording = false
+                    try {
+                        audioRecord?.stop()
+                    } catch (_: IllegalStateException) {
+                        // Already stopped
+                    }
+                    audioRecord?.release()
+                    audioRecord = null
+                    emitEvent(ServiceEvent.Error(PipelineError.AudioInitFailed))
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                    return@Thread
                 }
             }
         }.also { it.start() }
+        emitEvent(ServiceEvent.RecordingStarted)
     }
 
     private fun stopRecording() {
@@ -154,6 +178,7 @@ class RecordingService : Service() {
         audioRecord = null
 
         val outputFile = writeBufferToFile()
+        emitEvent(ServiceEvent.RecordingStopped)
         listener?.onRecordingComplete(outputFile)
 
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -233,6 +258,18 @@ class RecordingService : Service() {
 
         fun setOnRecordingCompleteListener(l: OnRecordingCompleteListener?) {
             listener = l
+        }
+
+        private val _serviceEvents = MutableSharedFlow<ServiceEvent>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
+
+        /** Observable service events. Collected by [MainViewModel] to drive UI state. */
+        val serviceEvents: SharedFlow<ServiceEvent> = _serviceEvents.asSharedFlow()
+
+        internal fun emitEvent(event: ServiceEvent) {
+            _serviceEvents.tryEmit(event)
         }
     }
 }
