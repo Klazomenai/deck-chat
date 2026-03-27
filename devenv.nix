@@ -1,7 +1,17 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 
 let
-  androidComposition = pkgs.androidenv.composeAndroidPackages {
+  # Android SDK requires unfree + explicit license acceptance.
+  # devenv 1.11.x removed the nixpkgs.config module option, so we import
+  # our own pkgs instance with the required config.
+  androidPkgs = import inputs.nixpkgs {
+    system = pkgs.stdenv.hostPlatform.system;
+    config = {
+      allowUnfree = true;
+      android_sdk.accept_license = true;
+    };
+  };
+  androidComposition = androidPkgs.androidenv.composeAndroidPackages {
     buildToolsVersions = [ "36.0.0" ];
     platformVersions = [ "35" "36" ];
     includeNDK = false;
@@ -14,10 +24,6 @@ let
 in
 
 {
-  # Android SDK has an unfree license; explicit license acceptance required by androidenv
-  nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.android_sdk.accept_license = true;
-
   languages.java = {
     enable = true;
     jdk.package = pkgs.jdk17;
