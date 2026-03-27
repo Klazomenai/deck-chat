@@ -33,6 +33,18 @@
 
     </LinearLayout>
 
+    <!-- Push-to-talk FAB (bottom-center) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/ptt_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="32dp"
+        android:contentDescription="@string/cd_ptt_start"
+        android:src="@android:drawable/ic_btn_speak_now"
+        app:fabSize="normal"
+        app:backgroundTint="@color/teal" />
+
     <!-- Settings gear (top-right) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/settings_fab"
