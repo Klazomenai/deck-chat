@@ -47,6 +47,18 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Request stop — only returns ACTION_STOP when currently recording.
+     * Does not mutate state for non-recording states (unlike [toggleRecording]).
+     */
+    fun requestStop(): String? {
+        return if (_state.value is PipelineState.Recording) {
+            RecordingService.ACTION_STOP
+        } else {
+            null
+        }
+    }
+
     /** Reset to idle — used after error display or TTS completion. */
     fun resetToIdle() {
         _state.value = PipelineState.Idle

@@ -18,6 +18,21 @@
     <string name="state_speaking">%1$s is speaking</string>
     <string name="state_error">Error</string>
 
+    <!-- Permission errors -->
+    <string name="error_permission_denied">Microphone permission required</string>
+    <string name="error_permission_permanently_denied">Enable microphone in Settings</string>
+
+    <!-- Permission rationale dialog -->
+    <string name="permission_rationale_title">Microphone access</string>
+    <string name="permission_rationale_message">DeckChat needs microphone access to capture voice messages for the crew. Audio is temporarily stored on your device and only sent when you choose to share it.</string>
+    <string name="permission_rationale_grant">Grant</string>
+    <string name="permission_rationale_deny">Not now</string>
+
+    <!-- Permission settings dialog (permanent denial) -->
+    <string name="permission_settings_title">Permission required</string>
+    <string name="permission_settings_message">Microphone permission was permanently denied. Please enable it in the app settings to use voice recording.</string>
+    <string name="permission_settings_open">Open Settings</string>
+
     <!-- Content descriptions -->
     <string name="cd_settings">Settings</string>
 </resources>
