@@ -44,15 +44,24 @@ class MainActivity : AppCompatActivity() {
         val stateLabel = findViewById<TextView>(R.id.state_label)
         val stateIndicator = findViewById<View>(R.id.state_indicator)
         val settingsFab = findViewById<FloatingActionButton>(R.id.settings_fab)
+        val pttFab = findViewById<FloatingActionButton>(R.id.ptt_fab)
 
         settingsFab.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
+        pttFab.setOnClickListener {
+            when (viewModel.state.value) {
+                is PipelineState.Recording -> onStopRequested()
+                else -> onRecordRequested()
+            }
         }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
                     updateStateUi(state, stateLabel, stateIndicator)
+                    updatePttFab(state, pttFab)
                 }
             }
         }
@@ -148,6 +157,26 @@ class MainActivity : AppCompatActivity() {
                     showPermanentDenialDialog()
                 }
                 else -> { /* Other errors handled by #32 */ }
+            }
+        }
+    }
+
+    private fun updatePttFab(state: PipelineState, fab: FloatingActionButton) {
+        when (state) {
+            is PipelineState.Recording -> {
+                fab.setImageResource(R.drawable.ic_stop)
+                fab.contentDescription = getString(R.string.cd_ptt_stop)
+                fab.isEnabled = true
+            }
+            is PipelineState.Processing, is PipelineState.Speaking, is PipelineState.Transcribed -> {
+                fab.setImageResource(android.R.drawable.ic_btn_speak_now)
+                fab.contentDescription = getString(R.string.cd_ptt_start)
+                fab.isEnabled = false
+            }
+            else -> {
+                fab.setImageResource(android.R.drawable.ic_btn_speak_now)
+                fab.contentDescription = getString(R.string.cd_ptt_start)
+                fab.isEnabled = true
             }
         }
     }
