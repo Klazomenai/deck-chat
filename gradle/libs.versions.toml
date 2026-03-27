@@ -7,6 +7,10 @@ preferenceKtx  = "1.2.1"
 securityCrypto = "1.1.0"    # final release — deprecated in 1.1.0; no further updates; used for EncryptedSharedPreferences
 sherpaOnnx     = "v1.12.29"  # JitPack requires 'v' prefix (matches upstream git tags)
 matrixRustSdk  = "26.03.19"
+material       = "1.12.0"
+constraintlayout = "2.2.1"
+lifecycle      = "2.9.1"
+activityKtx    = "1.10.1"
 coroutines     = "1.10.2"
 robolectric    = "4.16.1"
 espresso       = "3.7.0"
@@ -20,6 +24,11 @@ androidx-core-ktx        = { group = "androidx.core",                name = "cor
 androidx-appcompat       = { group = "androidx.appcompat",            name = "appcompat",         version.ref = "appcompat" }
 androidx-preference-ktx  = { group = "androidx.preference",          name = "preference-ktx",    version.ref = "preferenceKtx" }
 androidx-security-crypto = { group = "androidx.security",             name = "security-crypto",   version.ref = "securityCrypto" }
+google-material              = { group = "com.google.android.material", name = "material",                  version.ref = "material" }
+androidx-constraintlayout    = { group = "androidx.constraintlayout",  name = "constraintlayout",           version.ref = "constraintlayout" }
+androidx-lifecycle-viewmodel = { group = "androidx.lifecycle",          name = "lifecycle-viewmodel-ktx",    version.ref = "lifecycle" }
+androidx-lifecycle-runtime   = { group = "androidx.lifecycle",          name = "lifecycle-runtime-ktx",      version.ref = "lifecycle" }
+androidx-activity-ktx        = { group = "androidx.activity",           name = "activity-ktx",               version.ref = "activityKtx" }
 sherpa-onnx-android          = { group = "com.github.k2-fsa",        name = "sherpa-onnx",                 version.ref = "sherpaOnnx" }
 matrix-sdk-android           = { group = "org.matrix.rustcomponents", name = "sdk-android",                version.ref = "matrixRustSdk" }
 kotlinx-coroutines-android   = { group = "org.jetbrains.kotlinx",    name = "kotlinx-coroutines-android", version.ref = "coroutines" }

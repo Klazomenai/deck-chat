@@ -9,4 +9,15 @@
     <string name="session_active">Logged in as %1$s</string>
     <string name="session_none">No active session</string>
     <string name="clear_session_button">Clear Session</string>
+
+    <!-- Pipeline state labels -->
+    <string name="state_idle">Idle</string>
+    <string name="state_recording">Recording</string>
+    <string name="state_processing">Processing</string>
+    <string name="state_transcribed">Transcribed</string>
+    <string name="state_speaking">%1$s is speaking</string>
+    <string name="state_error">Error</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_settings">Settings</string>
 </resources>
