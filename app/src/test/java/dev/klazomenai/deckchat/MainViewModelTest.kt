@@ -130,4 +130,64 @@ class MainViewModelTest {
         assertTrue(state is PipelineState.Error)
         assertEquals(PipelineError.PermissionDenied, (state as PipelineState.Error).error)
     }
+
+    @Test
+    fun `setState with PermissionDenied sets error state`() {
+        val viewModel = MainViewModel()
+        viewModel.setState(PipelineState.Error(PipelineError.PermissionDenied))
+        val state = viewModel.state.value
+        assertTrue(state is PipelineState.Error)
+        assertEquals(PipelineError.PermissionDenied, (state as PipelineState.Error).error)
+    }
+
+    @Test
+    fun `setState with PermissionPermanentlyDenied sets error state`() {
+        val viewModel = MainViewModel()
+        viewModel.setState(PipelineState.Error(PipelineError.PermissionPermanentlyDenied))
+        val state = viewModel.state.value
+        assertTrue(state is PipelineState.Error)
+        assertEquals(PipelineError.PermissionPermanentlyDenied, (state as PipelineState.Error).error)
+    }
+
+    @Test
+    fun `resetToIdle after permission denial returns to idle`() {
+        val viewModel = MainViewModel()
+        viewModel.setState(PipelineState.Error(PipelineError.PermissionPermanentlyDenied))
+        viewModel.resetToIdle()
+        assertEquals(PipelineState.Idle, viewModel.state.value)
+    }
+
+    @Test
+    fun `requestStop from recording returns ACTION_STOP`() {
+        val viewModel = MainViewModel()
+        viewModel.setState(PipelineState.Recording)
+        val action = viewModel.requestStop()
+        assertEquals(RecordingService.ACTION_STOP, action)
+    }
+
+    @Test
+    fun `requestStop from idle returns null without state change`() {
+        val viewModel = MainViewModel()
+        val action = viewModel.requestStop()
+        assertNull(action)
+        assertEquals(PipelineState.Idle, viewModel.state.value)
+    }
+
+    @Test
+    fun `requestStop from error returns null without state change`() {
+        val viewModel = MainViewModel()
+        viewModel.setState(PipelineState.Error(PipelineError.PermissionDenied))
+        val action = viewModel.requestStop()
+        assertNull(action)
+        assertTrue(viewModel.state.value is PipelineState.Error)
+    }
+
+    @Test
+    fun `toggleRecording from permission error returns ACTION_START`() {
+        val viewModel = MainViewModel()
+        viewModel.setState(PipelineState.Error(PipelineError.PermissionDenied))
+        val action = viewModel.toggleRecording()
+        assertEquals(RecordingService.ACTION_START, action)
+        assertEquals(PipelineState.Recording, viewModel.state.value)
+    }
 }
