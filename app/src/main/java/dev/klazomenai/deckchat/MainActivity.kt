@@ -175,17 +175,19 @@ class MainActivity : AppCompatActivity() {
             if (currentIndicatorColor == 0) {
                 // First render — set directly, no animation
                 background.setColor(targetColor)
+                currentIndicatorColor = targetColor
             } else if (currentIndicatorColor != targetColor) {
                 colorAnimator?.cancel()
                 colorAnimator = ValueAnimator.ofObject(ArgbEvaluator(), currentIndicatorColor, targetColor).apply {
                     duration = COLOR_FADE_DURATION_MS
                     addUpdateListener { animator ->
-                        background.setColor(animator.animatedValue as Int)
+                        val color = animator.animatedValue as Int
+                        background.setColor(color)
+                        currentIndicatorColor = color
                     }
                     start()
                 }
             }
-            currentIndicatorColor = targetColor
         }
 
         // Handle permission error states with actionable dialogs
