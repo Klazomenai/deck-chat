@@ -147,10 +147,25 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Crossfade text label: fade out, swap text, fade in
-        label.animate().alpha(0f).setDuration(CROSSFADE_DURATION_MS / 2).withEndAction {
+        val currentText = label.text?.toString().orEmpty()
+        if (currentText.isEmpty() || currentText == text) {
+            // First render or no text change — set directly, no animation
             label.text = text
-            label.animate().alpha(1f).setDuration(CROSSFADE_DURATION_MS / 2).start()
-        }.start()
+            label.alpha = 1f
+        } else {
+            label.animate().cancel()
+            label.animate()
+                .alpha(0f)
+                .setDuration(CROSSFADE_DURATION_MS / 2)
+                .withEndAction {
+                    label.text = text
+                    label.animate()
+                        .alpha(1f)
+                        .setDuration(CROSSFADE_DURATION_MS / 2)
+                        .start()
+                }
+                .start()
+        }
 
         // Animate indicator colour
         val targetColor = ContextCompat.getColor(this, colorRes)
@@ -182,6 +197,12 @@ class MainActivity : AppCompatActivity() {
                 else -> { /* Other errors handled by #32 */ }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        colorAnimator?.cancel()
+        colorAnimator = null
     }
 
     companion object {
