@@ -4,11 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.io.File
 
@@ -93,24 +96,28 @@ class MainViewModel(
                     // Online mode: send to Matrix, await crew response, speak it
                     val responseDeferred = CompletableDeferred<CrewMessage>()
                     pendingResponse = responseDeferred
+                    val response: CrewMessage
+                    try {
+                        _state.value = PipelineState.Processing("Sending")
+                        matrixClient.sendMessage(roomId, text)
 
-                    _state.value = PipelineState.Processing("Sending")
-                    matrixClient.sendMessage(roomId, text)
-
-                    _state.value = PipelineState.Processing("Waiting for crew")
-                    val response = try {
-                        withTimeout(RESPONSE_TIMEOUT_MS) { responseDeferred.await() }
-                    } catch (e: TimeoutCancellationException) {
-                        throw RuntimeException("timeout")
+                        _state.value = PipelineState.Processing("Waiting for crew")
+                        response = try {
+                            withTimeout(RESPONSE_TIMEOUT_MS) { responseDeferred.await() }
+                        } catch (e: TimeoutCancellationException) {
+                            throw RuntimeException("timeout")
+                        }
                     } finally {
                         pendingResponse = null
                     }
 
-                    _state.value = PipelineState.Speaking(response.crewName)
+                    val displayName = CrewRegistry.lookup(response.crewName).displayName
+                    _state.value = PipelineState.Speaking(displayName)
                     ttsEngine.speak(response.crewName, response.body)
                 } else {
                     // Local echo: TTS reads back transcription with default crew
-                    _state.value = PipelineState.Speaking(DEFAULT_CREW)
+                    val displayName = CrewRegistry.lookup(DEFAULT_CREW).displayName
+                    _state.value = PipelineState.Speaking(displayName)
                     ttsEngine.speak(DEFAULT_CREW, text)
                 }
 
@@ -177,12 +184,11 @@ class MainViewModel(
         super.onCleared()
         pendingResponse?.cancel()
         pendingResponse = null
-        viewModelScope.launch {
-            try {
-                matrixClient?.stop()
-            } finally {
-                sttEngine.close()
-                ttsEngine.close()
+        sttEngine.close()
+        ttsEngine.close()
+        matrixClient?.let { client ->
+            runBlocking {
+                withContext(NonCancellable) { client.stop() }
             }
         }
     }
