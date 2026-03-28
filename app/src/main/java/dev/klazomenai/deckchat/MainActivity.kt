@@ -147,13 +147,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Crossfade text label: fade out, swap text, fade in
+        label.animate().cancel()
         val currentText = label.text?.toString().orEmpty()
         if (currentText.isEmpty() || currentText == text) {
             // First render or no text change — set directly, no animation
             label.text = text
             label.alpha = 1f
         } else {
-            label.animate().cancel()
             label.animate()
                 .alpha(0f)
                 .setDuration(CROSSFADE_DURATION_MS / 2)
