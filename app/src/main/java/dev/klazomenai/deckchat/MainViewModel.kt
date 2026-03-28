@@ -1,5 +1,6 @@
 package dev.klazomenai.deckchat
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -71,6 +72,9 @@ class MainViewModel(
 
                 matrixClient.listenToRoom(room)
             } catch (e: Exception) {
+                try {
+                    matrixClient.stop()
+                } catch (_: Exception) { /* best-effort cleanup */ }
                 _state.value = PipelineState.Error(
                     PipelineError.MatrixFailed(e.message ?: "Matrix init failed"),
                 )
@@ -128,6 +132,8 @@ class MainViewModel(
         }
     }
 
+    // Stage strings are set and checked in this file only. Extract to a sealed type
+    // when localising UI strings (M2) — see Copilot review on PR #89.
     private fun classifyError(e: Exception): PipelineError {
         val state = _state.value
         return when {
@@ -182,6 +188,11 @@ class MainViewModel(
 
     override fun onCleared() {
         super.onCleared()
+        releaseResources()
+    }
+
+    @VisibleForTesting
+    internal fun releaseResources() {
         pendingResponse?.cancel()
         pendingResponse = null
         sttEngine.close()

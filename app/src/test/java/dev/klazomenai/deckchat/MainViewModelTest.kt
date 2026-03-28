@@ -19,6 +19,7 @@ class MainViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var audioFile: File
+    private val viewModels = mutableListOf<MainViewModel>()
 
     @Before
     fun setUp() {
@@ -28,6 +29,8 @@ class MainViewModelTest {
 
     @After
     fun tearDown() {
+        viewModels.forEach { it.releaseResources() }
+        viewModels.clear()
         Dispatchers.resetMain()
         audioFile.delete()
     }
@@ -43,7 +46,7 @@ class MainViewModelTest {
             matrixClient = matrixClient,
             roomId = roomId,
             audioFileProvider = { audioFile },
-        )
+        ).also { viewModels.add(it) }
     }
 
     @Test

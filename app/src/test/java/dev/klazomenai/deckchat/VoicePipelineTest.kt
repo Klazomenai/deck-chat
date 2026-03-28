@@ -26,6 +26,7 @@ class VoicePipelineTest {
     private lateinit var ttsEngine: MockTtsEngine
     private lateinit var matrixClient: MockMatrixClient
     private lateinit var audioFile: File
+    private val viewModels = mutableListOf<MainViewModel>()
 
     @Before
     fun setUp() {
@@ -38,6 +39,8 @@ class VoicePipelineTest {
 
     @After
     fun tearDown() {
+        viewModels.forEach { it.releaseResources() }
+        viewModels.clear()
         Dispatchers.resetMain()
         audioFile.delete()
     }
@@ -52,7 +55,7 @@ class VoicePipelineTest {
             matrixClient = matrixClient,
             roomId = roomId,
             audioFileProvider = { audioFile },
-        )
+        ).also { viewModels.add(it) }
     }
 
     // --- Local Echo Mode ---
