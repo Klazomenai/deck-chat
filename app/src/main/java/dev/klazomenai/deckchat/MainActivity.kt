@@ -27,13 +27,14 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels {
-        val storage = SecureStorage(this)
-        val sttEngine = SherpaOnnxSttEngine(this)
-        val ttsEngine = SherpaOnnxTtsEngine(this)
-        val matrixClient: MatrixClient? = if (storage.hasSession()) RustMatrixClient(this, storage) else null
+        val appContext = applicationContext
+        val storage = SecureStorage(appContext)
+        val sttEngine = SherpaOnnxSttEngine(appContext)
+        val ttsEngine = SherpaOnnxTtsEngine(appContext)
+        val matrixClient: MatrixClient? = if (storage.hasSession()) RustMatrixClient(appContext, storage) else null
         val roomId = storage.roomId
         MainViewModel.Factory(sttEngine, ttsEngine, matrixClient, roomId) {
-            File(cacheDir, "recording.pcm")
+            File(appContext.cacheDir, "recording.pcm")
         }
     }
     private var currentIndicatorColor: Int = 0

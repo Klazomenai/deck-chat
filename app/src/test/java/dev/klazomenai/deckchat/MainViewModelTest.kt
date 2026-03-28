@@ -18,15 +18,18 @@ import java.io.File
 class MainViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var audioFile: File
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        audioFile = File.createTempFile("test", ".pcm")
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        audioFile.delete()
     }
 
     private fun createViewModel(
@@ -39,7 +42,7 @@ class MainViewModelTest {
             ttsEngine = MockTtsEngine(),
             matrixClient = matrixClient,
             roomId = roomId,
-            audioFileProvider = { File.createTempFile("test", ".pcm") },
+            audioFileProvider = { audioFile },
         )
     }
 

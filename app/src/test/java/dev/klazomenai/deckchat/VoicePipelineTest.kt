@@ -205,6 +205,34 @@ class VoicePipelineTest {
         assertTrue(!matrixClient.syncStarted)
     }
 
+    // --- Timeout ---
+
+    @Test
+    fun `online mode - response timeout transitions to MatrixFailed with timeout message`() = runTest {
+        sttEngine.returnText = "anyone there"
+        val viewModel = createViewModel(matrixClient = matrixClient, roomId = "!room:example.com")
+        advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        // Advance past STT + send but not past timeout
+        testScheduler.advanceTimeBy(1_000)
+        testScheduler.runCurrent()
+
+        // Should have sent to Matrix
+        assertEquals(1, matrixClient.sentMessages.size)
+
+        // Advance past the 30s timeout without sending a response
+        testScheduler.advanceTimeBy(MainViewModel.RESPONSE_TIMEOUT_MS + 1_000)
+        testScheduler.runCurrent()
+
+        val state = viewModel.state.value
+        assertTrue(state is PipelineState.Error)
+        val error = (state as PipelineState.Error).error
+        assertTrue(error is PipelineError.MatrixFailed)
+        assertEquals("timeout", (error as PipelineError.MatrixFailed).message)
+        assertEquals(0, ttsEngine.calls.size)
+    }
+
     // --- Pipeline uses correct audio file ---
 
     @Test

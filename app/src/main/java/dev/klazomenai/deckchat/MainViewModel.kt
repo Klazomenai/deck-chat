@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,14 +56,21 @@ class MainViewModel(
         matrixClient ?: return
         val room = roomId ?: return
 
-        matrixClient.startSync { crewMessage ->
-            pendingResponse?.complete(crewMessage)
-        }
         viewModelScope.launch {
             try {
+                matrixClient.restoreSession()
+
+                matrixClient.startSync { crewMessage ->
+                    viewModelScope.launch {
+                        pendingResponse?.complete(crewMessage)
+                    }
+                }
+
                 matrixClient.listenToRoom(room)
             } catch (e: Exception) {
-                // Non-fatal — sync may still work, room listener is best-effort at init
+                _state.value = PipelineState.Error(
+                    PipelineError.MatrixFailed(e.message ?: "Matrix init failed"),
+                )
             }
         }
     }
@@ -83,13 +91,17 @@ class MainViewModel(
 
                 if (matrixClient != null && roomId != null) {
                     // Online mode: send to Matrix, await crew response, speak it
+                    val responseDeferred = CompletableDeferred<CrewMessage>()
+                    pendingResponse = responseDeferred
+
                     _state.value = PipelineState.Processing("Sending")
                     matrixClient.sendMessage(roomId, text)
 
                     _state.value = PipelineState.Processing("Waiting for crew")
-                    pendingResponse = CompletableDeferred()
                     val response = try {
-                        withTimeout(RESPONSE_TIMEOUT_MS) { pendingResponse!!.await() }
+                        withTimeout(RESPONSE_TIMEOUT_MS) { responseDeferred.await() }
+                    } catch (e: TimeoutCancellationException) {
+                        throw RuntimeException("timeout")
                     } finally {
                         pendingResponse = null
                     }
@@ -165,6 +177,14 @@ class MainViewModel(
         super.onCleared()
         pendingResponse?.cancel()
         pendingResponse = null
+        viewModelScope.launch {
+            try {
+                matrixClient?.stop()
+            } finally {
+                sttEngine.close()
+                ttsEngine.close()
+            }
+        }
     }
 
     class Factory(
@@ -176,7 +196,10 @@ class MainViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider) as T
+            if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+                return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
     }
 
