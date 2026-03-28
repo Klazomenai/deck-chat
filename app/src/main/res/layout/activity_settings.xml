@@ -27,6 +27,21 @@
         android:inputType="textUri"
         android:layout_marginBottom="16dp" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/room_id_label"
+        android:labelFor="@id/room_id_input"
+        android:layout_marginBottom="4dp" />
+
+    <EditText
+        android:id="@+id/room_id_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/room_id_hint"
+        android:inputType="text"
+        android:layout_marginBottom="16dp" />
+
     <Button
         android:id="@+id/save_button"
         android:layout_width="match_parent"

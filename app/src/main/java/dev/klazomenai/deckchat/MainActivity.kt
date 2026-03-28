@@ -22,10 +22,20 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
-    private val viewModel: MainViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModels {
+        val storage = SecureStorage(this)
+        val sttEngine = SherpaOnnxSttEngine(this)
+        val ttsEngine = SherpaOnnxTtsEngine(this)
+        val matrixClient: MatrixClient? = if (storage.hasSession()) RustMatrixClient(this, storage) else null
+        val roomId = storage.roomId
+        MainViewModel.Factory(sttEngine, ttsEngine, matrixClient, roomId) {
+            File(cacheDir, "recording.pcm")
+        }
+    }
     private var currentIndicatorColor: Int = 0
     private var colorAnimator: ValueAnimator? = null
 

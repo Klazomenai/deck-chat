@@ -25,12 +25,14 @@ class SettingsActivity : AppCompatActivity() {
         storage = SecureStorage(this)
 
         val homeserverInput = findViewById<EditText>(R.id.homeserver_url_input)
+        val roomIdInput = findViewById<EditText>(R.id.room_id_input)
         val statusText = findViewById<TextView>(R.id.session_status)
         val saveButton = findViewById<Button>(R.id.save_button)
         val clearButton = findViewById<Button>(R.id.clear_session_button)
 
         // Load saved values
         homeserverInput.setText(storage.homeserverUrl ?: "")
+        roomIdInput.setText(storage.roomId ?: "")
         updateSessionStatus(statusText)
 
         saveButton.setOnClickListener {
@@ -49,6 +51,10 @@ class SettingsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             storage.homeserverUrl = url
+
+            val roomId = roomIdInput.text.toString().trim()
+            storage.roomId = roomId.ifEmpty { null }
+
             updateSessionStatus(statusText)
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
         }

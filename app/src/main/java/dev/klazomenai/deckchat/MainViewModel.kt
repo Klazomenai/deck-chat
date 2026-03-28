@@ -1,32 +1,124 @@
 package dev.klazomenai.deckchat
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import java.io.File
 
 /**
- * ViewModel for MainActivity. Holds the pipeline state and collects service events.
+ * ViewModel for MainActivity. Holds the pipeline state, collects service events,
+ * and orchestrates the voice pipeline: Recording → STT → Matrix → TTS → Idle.
  *
- * Observes [RecordingService.serviceEvents] to translate service-level events into
- * UI-facing [PipelineState] transitions.
+ * When Matrix is not configured ([matrixClient] or [roomId] is null), runs in
+ * local echo mode: STT result is spoken back via TTS with the default crew voice.
  */
-class MainViewModel : ViewModel() {
+class MainViewModel(
+    private val sttEngine: SttEngine,
+    private val ttsEngine: TtsEngine,
+    private val matrixClient: MatrixClient?,
+    private val roomId: String?,
+    private val audioFileProvider: () -> File,
+) : ViewModel() {
 
     private val _state = MutableStateFlow<PipelineState>(PipelineState.Idle)
     val state: StateFlow<PipelineState> = _state.asStateFlow()
+
+    private var pendingResponse: CompletableDeferred<CrewMessage>? = null
 
     init {
         viewModelScope.launch {
             RecordingService.serviceEvents.collect { event ->
                 when (event) {
                     is ServiceEvent.RecordingStarted -> _state.value = PipelineState.Recording
-                    is ServiceEvent.RecordingStopped -> _state.value = PipelineState.Processing("Transcribing")
+                    is ServiceEvent.RecordingStopped -> {
+                        _state.value = PipelineState.Processing("Transcribing")
+                        runPipeline()
+                    }
                     is ServiceEvent.Error -> _state.value = PipelineState.Error(event.error)
                 }
             }
+        }
+
+        // Start Matrix sync if configured
+        if (matrixClient != null && roomId != null) {
+            initMatrixSync()
+        }
+    }
+
+    private fun initMatrixSync() {
+        matrixClient ?: return
+        val room = roomId ?: return
+
+        matrixClient.startSync { crewMessage ->
+            pendingResponse?.complete(crewMessage)
+        }
+        viewModelScope.launch {
+            try {
+                matrixClient.listenToRoom(room)
+            } catch (e: Exception) {
+                // Non-fatal — sync may still work, room listener is best-effort at init
+            }
+        }
+    }
+
+    private fun runPipeline() {
+        viewModelScope.launch {
+            try {
+                // STT
+                val audioFile = audioFileProvider()
+                val text = sttEngine.transcribe(audioFile)
+
+                if (text.isBlank()) {
+                    _state.value = PipelineState.Idle
+                    return@launch
+                }
+
+                _state.value = PipelineState.Transcribed(text)
+
+                if (matrixClient != null && roomId != null) {
+                    // Online mode: send to Matrix, await crew response, speak it
+                    _state.value = PipelineState.Processing("Sending")
+                    matrixClient.sendMessage(roomId, text)
+
+                    _state.value = PipelineState.Processing("Waiting for crew")
+                    pendingResponse = CompletableDeferred()
+                    val response = try {
+                        withTimeout(RESPONSE_TIMEOUT_MS) { pendingResponse!!.await() }
+                    } finally {
+                        pendingResponse = null
+                    }
+
+                    _state.value = PipelineState.Speaking(response.crewName)
+                    ttsEngine.speak(response.crewName, response.body)
+                } else {
+                    // Local echo: TTS reads back transcription with default crew
+                    _state.value = PipelineState.Speaking(DEFAULT_CREW)
+                    ttsEngine.speak(DEFAULT_CREW, text)
+                }
+
+                _state.value = PipelineState.Idle
+            } catch (e: Exception) {
+                _state.value = PipelineState.Error(classifyError(e))
+            }
+        }
+    }
+
+    private fun classifyError(e: Exception): PipelineError {
+        val state = _state.value
+        return when {
+            state is PipelineState.Processing && state.stage == "Transcribing" ->
+                PipelineError.SttFailed(e.message ?: "STT failed")
+            state is PipelineState.Processing && (state.stage == "Sending" || state.stage == "Waiting for crew") ->
+                PipelineError.MatrixFailed(e.message ?: "Matrix failed")
+            state is PipelineState.Speaking ->
+                PipelineError.TtsFailed(e.message ?: "TTS failed")
+            else -> PipelineError.SttFailed(e.message ?: "Pipeline failed")
         }
     }
 
@@ -43,7 +135,7 @@ class MainViewModel : ViewModel() {
             is PipelineState.Recording -> {
                 RecordingService.ACTION_STOP
             }
-            else -> null // Ignore during processing/speaking
+            else -> null
         }
     }
 
@@ -67,5 +159,29 @@ class MainViewModel : ViewModel() {
     /** Set state directly — used by the activity for pipeline stages not driven by service events. */
     fun setState(newState: PipelineState) {
         _state.value = newState
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        pendingResponse?.cancel()
+        pendingResponse = null
+    }
+
+    class Factory(
+        private val sttEngine: SttEngine,
+        private val ttsEngine: TtsEngine,
+        private val matrixClient: MatrixClient?,
+        private val roomId: String?,
+        private val audioFileProvider: () -> File,
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider) as T
+        }
+    }
+
+    companion object {
+        internal const val RESPONSE_TIMEOUT_MS = 30_000L
+        internal const val DEFAULT_CREW = "maren"
     }
 }

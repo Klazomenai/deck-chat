@@ -63,6 +63,10 @@ class SecureStorage(
         get() = prefs.getString(KEY_SLIDING_SYNC_VERSION, null)
         set(value) = prefs.edit().putString(KEY_SLIDING_SYNC_VERSION, value).apply()
 
+    var roomId: String?
+        get() = prefs.getString(KEY_ROOM_ID, null)
+        set(value) = prefs.edit().putString(KEY_ROOM_ID, value).apply()
+
     // --- Sensitive tokens (encrypted via TokenEncryptor) ---
 
     var accessToken: String?
@@ -190,6 +194,7 @@ class SecureStorage(
         private const val KEY_USER_ID = "user_id"
         private const val KEY_DEVICE_ID = "device_id"
         private const val KEY_SLIDING_SYNC_VERSION = "sliding_sync_version"
+        private const val KEY_ROOM_ID = "room_id"
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_SQLITE_PASSPHRASE = "sqlite_passphrase"

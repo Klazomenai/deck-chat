@@ -11,7 +11,10 @@ import org.junit.Test
  * Mock that satisfies [MatrixClient] without loading the matrix-rust-sdk JNI.
  * Used by JVM tests that exercise code paths involving Matrix messaging.
  */
-class MockMatrixClient : MatrixClient {
+class MockMatrixClient(
+    var shouldThrowOnSend: Boolean = false,
+    var sendThrowMessage: String = "Matrix send failed",
+) : MatrixClient {
     data class SentMessage(val roomId: String, val text: String)
 
     val sentMessages = mutableListOf<SentMessage>()
@@ -19,6 +22,7 @@ class MockMatrixClient : MatrixClient {
     var onMessageCallback: ((CrewMessage) -> Unit)? = null
     var loginCount = 0
     var stopCount = 0
+    var syncStarted = false
 
     override suspend fun login(homeserverUrl: String, username: String, password: String) {
         loggedIn = true
@@ -31,9 +35,11 @@ class MockMatrixClient : MatrixClient {
 
     override suspend fun sendMessage(roomId: String, text: String) {
         sentMessages.add(SentMessage(roomId, text))
+        if (shouldThrowOnSend) throw RuntimeException(sendThrowMessage)
     }
 
     override fun startSync(onMessage: (CrewMessage) -> Unit) {
+        syncStarted = true
         onMessageCallback = onMessage
     }
 
