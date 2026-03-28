@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary palette (nautical theme — dark mode) -->
+    <color name="navy">#4A7FB5</color>
+    <color name="navy_dark">#2C5A8A</color>
+    <color name="teal">#4DD0E1</color>
+    <color name="teal_dark">#00ACC1</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- State indicator colors (brighter for dark backgrounds) -->
+    <color name="state_idle">#BDBDBD</color>
+    <color name="state_recording">#EF5350</color>
+    <color name="state_processing">#FFA726</color>
+    <color name="state_transcribed">#42A5F5</color>
+    <color name="state_speaking">#66BB6A</color>
+    <color name="state_error">#EF5350</color>
+</resources>

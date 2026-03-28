@@ -1,6 +1,8 @@
 package dev.klazomenai.deckchat
 
 import android.Manifest
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.GradientDrawable
@@ -24,6 +26,8 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    private var currentIndicatorColor: Int = 0
+    private var colorAnimator: ValueAnimator? = null
 
     private val requestAudioPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -142,12 +146,31 @@ class MainActivity : AppCompatActivity() {
             is PipelineState.Error -> errorText(state.error) to R.color.state_error
         }
 
-        label.text = text
-        val color = ContextCompat.getColor(this, colorRes)
+        // Crossfade text label: fade out, swap text, fade in
+        label.animate().alpha(0f).setDuration(CROSSFADE_DURATION_MS / 2).withEndAction {
+            label.text = text
+            label.animate().alpha(1f).setDuration(CROSSFADE_DURATION_MS / 2).start()
+        }.start()
+
+        // Animate indicator colour
+        val targetColor = ContextCompat.getColor(this, colorRes)
         val background = indicator.background
         if (background is GradientDrawable) {
             background.mutate()
-            background.setColor(color)
+            if (currentIndicatorColor == 0) {
+                // First render — set directly, no animation
+                background.setColor(targetColor)
+            } else if (currentIndicatorColor != targetColor) {
+                colorAnimator?.cancel()
+                colorAnimator = ValueAnimator.ofObject(ArgbEvaluator(), currentIndicatorColor, targetColor).apply {
+                    duration = COLOR_FADE_DURATION_MS
+                    addUpdateListener { animator ->
+                        background.setColor(animator.animatedValue as Int)
+                    }
+                    start()
+                }
+            }
+            currentIndicatorColor = targetColor
         }
 
         // Handle permission error states with actionable dialogs
@@ -159,6 +182,11 @@ class MainActivity : AppCompatActivity() {
                 else -> { /* Other errors handled by #32 */ }
             }
         }
+    }
+
+    companion object {
+        private const val CROSSFADE_DURATION_MS = 300L
+        private const val COLOR_FADE_DURATION_MS = 400L
     }
 
     private fun updatePttFab(state: PipelineState, fab: FloatingActionButton) {
