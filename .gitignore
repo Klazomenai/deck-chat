@@ -16,6 +16,7 @@ app/src/main/assets/tts/
 # Keystore / signing
 *.jks
 *.keystore
+keystore.properties
 
 # OS
 .DS_Store
