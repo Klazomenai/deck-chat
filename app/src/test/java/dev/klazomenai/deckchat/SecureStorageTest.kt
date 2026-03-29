@@ -112,4 +112,48 @@ class SecureStorageTest {
         assertEquals("@deckchat:example.com", storage.userId)
         assertEquals("ABCDEF", storage.deviceId)
     }
+
+    @Test
+    fun `voiceProfile defaults to null`() {
+        val storage = createStorage()
+        assertNull(storage.voiceProfile)
+    }
+
+    @Test
+    fun `voiceProfile round-trips`() {
+        val storage = createStorage()
+        storage.voiceProfile = "crest"
+        assertEquals("crest", storage.voiceProfile)
+    }
+
+    @Test
+    fun `onboardingComplete defaults to false`() {
+        val storage = createStorage()
+        assertFalse(storage.onboardingComplete)
+    }
+
+    @Test
+    fun `onboardingComplete round-trips`() {
+        val storage = createStorage()
+        storage.onboardingComplete = true
+        assertTrue(storage.onboardingComplete)
+    }
+
+    @Test
+    fun `clearSession does not clear onboardingComplete`() {
+        val storage = createStorage()
+        storage.onboardingComplete = true
+        storage.accessToken = "token"
+        storage.clearSession()
+        assertTrue(storage.onboardingComplete)
+    }
+
+    @Test
+    fun `clearSession does not clear voiceProfile`() {
+        val storage = createStorage()
+        storage.voiceProfile = "crest"
+        storage.accessToken = "token"
+        storage.clearSession()
+        assertEquals("crest", storage.voiceProfile)
+    }
 }

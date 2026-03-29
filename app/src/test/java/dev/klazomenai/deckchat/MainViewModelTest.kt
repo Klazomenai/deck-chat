@@ -39,6 +39,7 @@ class MainViewModelTest {
         sttResult: String = "",
         matrixClient: MatrixClient? = null,
         roomId: String? = null,
+        defaultCrew: String = "maren",
     ): MainViewModel {
         return MainViewModel(
             sttEngine = MockSttEngine(returnText = sttResult),
@@ -46,6 +47,7 @@ class MainViewModelTest {
             matrixClient = matrixClient,
             roomId = roomId,
             audioFileProvider = { audioFile },
+            defaultCrew = defaultCrew,
             ioDispatcher = testDispatcher,
         ).also { viewModels.add(it) }
     }
@@ -264,5 +266,28 @@ class MainViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(PipelineState.Recording, viewModel.state.value)
+    }
+
+    // --- Voice profile ---
+
+    @Test
+    fun `local echo uses configured voice profile`() = runTest {
+        val tts = MockTtsEngine()
+        val viewModel = MainViewModel(
+            sttEngine = MockSttEngine(returnText = "hello"),
+            ttsEngine = tts,
+            matrixClient = null,
+            roomId = null,
+            audioFileProvider = { audioFile },
+            defaultCrew = "crest",
+            ioDispatcher = testDispatcher,
+        ).also { viewModels.add(it) }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, tts.calls.size)
+        assertEquals("crest", tts.calls[0].crewName)
     }
 }

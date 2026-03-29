@@ -40,6 +40,8 @@
 
         <activity android:name=".SettingsActivity" />
 
+        <activity android:name=".OnboardingActivity" />
+
         <!-- Headset button → start/stop RecordingService.
              exported=true required: system delivers ACTION_MEDIA_BUTTON from outside the app.
              See issue #17 for MediaSession spike (future replacement). -->

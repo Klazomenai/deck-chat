@@ -33,8 +33,10 @@ class MainActivity : AppCompatActivity() {
         val ttsEngine = SherpaOnnxTtsEngine(appContext)
         val matrixClient: MatrixClient? = if (storage.hasSession()) RustMatrixClient(appContext, storage) else null
         val roomId = storage.roomId
+        val voiceProfile = storage.voiceProfile ?: "maren"
         MainViewModel.Factory(sttEngine, ttsEngine, matrixClient, roomId,
             audioFileProvider = { File(appContext.cacheDir, "recording.pcm") },
+            defaultCrew = voiceProfile,
         )
     }
     private var currentIndicatorColor: Int = 0
@@ -54,6 +56,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (!SecureStorage(this).onboardingComplete) {
+            startActivity(Intent(this, OnboardingActivity::class.java))
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_main)
 
         val stateLabel = findViewById<TextView>(R.id.state_label)
