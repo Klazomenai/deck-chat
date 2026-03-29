@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3](https://github.com/Klazomenai/deck-chat/compare/v0.0.2...v0.0.3) (2026-03-29)
+
+
+### Fixed
+
+* add R8 dontwarn rules for Tink JSR-305 annotations 🐛 ([#96](https://github.com/Klazomenai/deck-chat/issues/96)) ([5b34fd4](https://github.com/Klazomenai/deck-chat/commit/5b34fd4b39667961961655b560980ce3dd0bc400)), closes [#93](https://github.com/Klazomenai/deck-chat/issues/93)
+
 ## [0.0.2](https://github.com/Klazomenai/deck-chat/compare/v0.0.1...v0.0.2) (2026-03-29)
 
 
