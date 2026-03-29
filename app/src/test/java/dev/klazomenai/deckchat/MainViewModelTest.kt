@@ -12,45 +12,67 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var audioFile: File
+    private val viewModels = mutableListOf<MainViewModel>()
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        audioFile = File.createTempFile("test", ".pcm")
     }
 
     @After
     fun tearDown() {
+        viewModels.forEach { it.releaseResources() }
+        viewModels.clear()
         Dispatchers.resetMain()
+        audioFile.delete()
+    }
+
+    private fun createViewModel(
+        sttResult: String = "",
+        matrixClient: MatrixClient? = null,
+        roomId: String? = null,
+    ): MainViewModel {
+        return MainViewModel(
+            sttEngine = MockSttEngine(returnText = sttResult),
+            ttsEngine = MockTtsEngine(),
+            matrixClient = matrixClient,
+            roomId = roomId,
+            audioFileProvider = { audioFile },
+            ioDispatcher = testDispatcher,
+        ).also { viewModels.add(it) }
     }
 
     @Test
     fun `initial state is idle`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         assertEquals(PipelineState.Idle, viewModel.state.value)
     }
 
     @Test
     fun `toggleRecording from idle returns ACTION_START`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         val action = viewModel.toggleRecording()
         assertEquals(RecordingService.ACTION_START, action)
     }
 
     @Test
     fun `toggleRecording from idle transitions to recording`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.toggleRecording()
         assertEquals(PipelineState.Recording, viewModel.state.value)
     }
 
     @Test
     fun `toggleRecording from recording returns ACTION_STOP`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.toggleRecording() // → Recording
         val action = viewModel.toggleRecording()
         assertEquals(RecordingService.ACTION_STOP, action)
@@ -58,7 +80,7 @@ class MainViewModelTest {
 
     @Test
     fun `toggleRecording from processing returns null`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Processing("Transcribing"))
         val action = viewModel.toggleRecording()
         assertNull(action)
@@ -66,7 +88,7 @@ class MainViewModelTest {
 
     @Test
     fun `toggleRecording from speaking returns null`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Speaking("Maren"))
         val action = viewModel.toggleRecording()
         assertNull(action)
@@ -74,7 +96,7 @@ class MainViewModelTest {
 
     @Test
     fun `toggleRecording from error returns ACTION_START`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Error(PipelineError.MicBusy))
         val action = viewModel.toggleRecording()
         assertEquals(RecordingService.ACTION_START, action)
@@ -82,7 +104,7 @@ class MainViewModelTest {
 
     @Test
     fun `resetToIdle sets state to idle`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Error(PipelineError.MicBusy))
         viewModel.resetToIdle()
         assertEquals(PipelineState.Idle, viewModel.state.value)
@@ -90,7 +112,7 @@ class MainViewModelTest {
 
     @Test
     fun `setState updates state directly`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Transcribed("hello"))
         assertTrue(viewModel.state.value is PipelineState.Transcribed)
         assertEquals("hello", (viewModel.state.value as PipelineState.Transcribed).text)
@@ -98,7 +120,7 @@ class MainViewModelTest {
 
     @Test
     fun `service event RecordingStarted transitions to recording`() = runTest {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         RecordingService.emitEvent(ServiceEvent.RecordingStarted)
@@ -108,19 +130,20 @@ class MainViewModelTest {
     }
 
     @Test
-    fun `service event RecordingStopped transitions to processing`() = runTest {
-        val viewModel = MainViewModel()
+    fun `service event RecordingStopped runs pipeline and returns to idle on blank STT`() = runTest {
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         RecordingService.emitEvent(ServiceEvent.RecordingStopped)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(viewModel.state.value is PipelineState.Processing)
+        // Mock STT returns empty string by default, so pipeline returns to Idle
+        assertEquals(PipelineState.Idle, viewModel.state.value)
     }
 
     @Test
     fun `service event Error transitions to error state`() = runTest {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         RecordingService.emitEvent(ServiceEvent.Error(PipelineError.PermissionDenied))
@@ -133,7 +156,7 @@ class MainViewModelTest {
 
     @Test
     fun `setState with PermissionDenied sets error state`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Error(PipelineError.PermissionDenied))
         val state = viewModel.state.value
         assertTrue(state is PipelineState.Error)
@@ -142,7 +165,7 @@ class MainViewModelTest {
 
     @Test
     fun `setState with PermissionPermanentlyDenied sets error state`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Error(PipelineError.PermissionPermanentlyDenied))
         val state = viewModel.state.value
         assertTrue(state is PipelineState.Error)
@@ -151,7 +174,7 @@ class MainViewModelTest {
 
     @Test
     fun `resetToIdle after permission denial returns to idle`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Error(PipelineError.PermissionPermanentlyDenied))
         viewModel.resetToIdle()
         assertEquals(PipelineState.Idle, viewModel.state.value)
@@ -159,7 +182,7 @@ class MainViewModelTest {
 
     @Test
     fun `requestStop from recording returns ACTION_STOP`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Recording)
         val action = viewModel.requestStop()
         assertEquals(RecordingService.ACTION_STOP, action)
@@ -167,7 +190,7 @@ class MainViewModelTest {
 
     @Test
     fun `requestStop from idle returns null without state change`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         val action = viewModel.requestStop()
         assertNull(action)
         assertEquals(PipelineState.Idle, viewModel.state.value)
@@ -175,7 +198,7 @@ class MainViewModelTest {
 
     @Test
     fun `requestStop from error returns null without state change`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Error(PipelineError.PermissionDenied))
         val action = viewModel.requestStop()
         assertNull(action)
@@ -184,7 +207,7 @@ class MainViewModelTest {
 
     @Test
     fun `toggleRecording from permission error returns ACTION_START`() {
-        val viewModel = MainViewModel()
+        val viewModel = createViewModel()
         viewModel.setState(PipelineState.Error(PipelineError.PermissionDenied))
         val action = viewModel.toggleRecording()
         assertEquals(RecordingService.ACTION_START, action)

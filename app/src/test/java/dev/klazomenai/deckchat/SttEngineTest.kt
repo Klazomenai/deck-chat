@@ -9,12 +9,19 @@ import java.io.File
  * Mock that satisfies [SttEngine] without loading any JNI library.
  * Used by all JVM unit tests that exercise code paths involving STT.
  */
-class MockSttEngine(var returnText: String = "mock transcription") : SttEngine {
+class MockSttEngine(
+    var returnText: String = "mock transcription",
+    var shouldThrow: Boolean = false,
+    var throwMessage: String = "STT failed",
+) : SttEngine {
     var lastFile: File? = null
+    var transcribeCallCount = 0
     var closeCount = 0
 
     override suspend fun transcribe(audioFile: File): String {
+        transcribeCallCount++
         lastFile = audioFile
+        if (shouldThrow) throw RuntimeException(throwMessage)
         return returnText
     }
 

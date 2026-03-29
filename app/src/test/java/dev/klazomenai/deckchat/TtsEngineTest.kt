@@ -9,7 +9,10 @@ import org.junit.Test
  * Mock that satisfies [TtsEngine] without loading any JNI library.
  * Used by all JVM unit tests that exercise code paths involving TTS.
  */
-class MockTtsEngine : TtsEngine {
+class MockTtsEngine(
+    var shouldThrow: Boolean = false,
+    var throwMessage: String = "TTS failed",
+) : TtsEngine {
     data class SpeakCall(val crewName: String, val text: String)
 
     val calls = mutableListOf<SpeakCall>()
@@ -17,6 +20,7 @@ class MockTtsEngine : TtsEngine {
 
     override suspend fun speak(crewName: String, text: String) {
         calls.add(SpeakCall(crewName, text))
+        if (shouldThrow) throw RuntimeException(throwMessage)
     }
 
     override fun close() {

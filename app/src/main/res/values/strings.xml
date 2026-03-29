@@ -4,6 +4,8 @@
     <string name="settings_title">Settings</string>
     <string name="homeserver_url_label">Homeserver URL</string>
     <string name="homeserver_url_hint">https://matrix.example.com</string>
+    <string name="room_id_label">Matrix Room ID</string>
+    <string name="room_id_hint">!abc123:matrix.example.com</string>
     <string name="save_button">Save</string>
     <string name="session_heading">Matrix Session</string>
     <string name="session_active">Logged in as %1$s</string>
