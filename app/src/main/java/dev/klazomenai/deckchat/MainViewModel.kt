@@ -37,14 +37,24 @@ class MainViewModel(
     private val _state = MutableStateFlow<PipelineState>(PipelineState.Idle)
     val state: StateFlow<PipelineState> = _state.asStateFlow()
 
+    private val _recordingDurationMs = MutableStateFlow(0L)
+    val recordingDurationMs: StateFlow<Long> = _recordingDurationMs.asStateFlow()
+
     private var pendingResponse: CompletableDeferred<CrewMessage>? = null
 
     init {
         viewModelScope.launch {
             RecordingService.serviceEvents.collect { event ->
                 when (event) {
-                    is ServiceEvent.RecordingStarted -> _state.value = PipelineState.Recording
+                    is ServiceEvent.RecordingStarted -> {
+                        _recordingDurationMs.value = 0L
+                        _state.value = PipelineState.Recording
+                    }
+                    is ServiceEvent.RecordingProgress -> {
+                        _recordingDurationMs.value = event.durationMs
+                    }
                     is ServiceEvent.RecordingStopped -> {
+                        _recordingDurationMs.value = 0L
                         _state.value = PipelineState.Processing("Transcribing")
                         runPipeline()
                     }

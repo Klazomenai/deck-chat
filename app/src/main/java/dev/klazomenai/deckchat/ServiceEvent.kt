@@ -10,6 +10,9 @@ sealed class ServiceEvent {
     /** Recording has started successfully. */
     data object RecordingStarted : ServiceEvent()
 
+    /** Periodic progress during recording — emitted ~every 500ms. */
+    data class RecordingProgress(val durationMs: Long) : ServiceEvent()
+
     /** Recording stopped normally — PCM file is ready. */
     data object RecordingStopped : ServiceEvent()
 

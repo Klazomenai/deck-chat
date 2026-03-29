@@ -31,6 +31,20 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <!-- Detail text — transcription result, shown below state_label -->
+        <TextView
+            android:id="@+id/state_detail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="14sp"
+            android:visibility="gone"
+            android:gravity="center"
+            android:maxLines="3"
+            android:ellipsize="end"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp" />
+
     </LinearLayout>
 
     <!-- Push-to-talk FAB (bottom-center) -->
