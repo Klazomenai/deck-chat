@@ -184,7 +184,14 @@ class RecordingService : Service() {
         audioRecord?.release()
         audioRecord = null
 
-        val outputFile = writeBufferToFile()
+        val outputFile = try {
+            writeBufferToFile()
+        } catch (e: Exception) {
+            emitEvent(ServiceEvent.Error(PipelineError.AudioInitFailed))
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
         emitEvent(ServiceEvent.RecordingStopped)
         listener?.onRecordingComplete(outputFile)
 
