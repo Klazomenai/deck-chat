@@ -33,9 +33,9 @@ class MainActivity : AppCompatActivity() {
         val ttsEngine = SherpaOnnxTtsEngine(appContext)
         val matrixClient: MatrixClient? = if (storage.hasSession()) RustMatrixClient(appContext, storage) else null
         val roomId = storage.roomId
-        MainViewModel.Factory(sttEngine, ttsEngine, matrixClient, roomId) {
-            File(appContext.cacheDir, "recording.pcm")
-        }
+        MainViewModel.Factory(sttEngine, ttsEngine, matrixClient, roomId,
+            audioFileProvider = { File(appContext.cacheDir, "recording.pcm") },
+        )
     }
     private var currentIndicatorColor: Int = 0
     private var colorAnimator: ValueAnimator? = null

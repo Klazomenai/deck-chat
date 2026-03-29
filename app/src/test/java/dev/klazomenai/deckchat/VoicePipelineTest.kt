@@ -55,6 +55,7 @@ class VoicePipelineTest {
             matrixClient = matrixClient,
             roomId = roomId,
             audioFileProvider = { audioFile },
+            ioDispatcher = testDispatcher,
         ).also { viewModels.add(it) }
     }
 

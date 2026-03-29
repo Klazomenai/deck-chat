@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +31,7 @@ class MainViewModel(
     private val matrixClient: MatrixClient?,
     private val roomId: String?,
     private val audioFileProvider: () -> File,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<PipelineState>(PipelineState.Idle)
@@ -62,18 +65,20 @@ class MainViewModel(
 
         viewModelScope.launch {
             try {
-                matrixClient.restoreSession()
+                withContext(ioDispatcher) {
+                    matrixClient.restoreSession()
 
-                matrixClient.startSync { crewMessage ->
-                    viewModelScope.launch {
-                        pendingResponse?.complete(crewMessage)
+                    matrixClient.startSync { crewMessage ->
+                        viewModelScope.launch {
+                            pendingResponse?.complete(crewMessage)
+                        }
                     }
-                }
 
-                matrixClient.listenToRoom(room)
+                    matrixClient.listenToRoom(room)
+                }
             } catch (e: Exception) {
                 try {
-                    matrixClient.stop()
+                    withContext(ioDispatcher) { matrixClient.stop() }
                 } catch (_: Exception) { /* best-effort cleanup */ }
                 _state.value = PipelineState.Error(
                     PipelineError.MatrixFailed(e.message ?: "Matrix init failed"),
@@ -103,7 +108,7 @@ class MainViewModel(
                     val response: CrewMessage
                     try {
                         _state.value = PipelineState.Processing("Sending")
-                        matrixClient.sendMessage(roomId, text)
+                        withContext(ioDispatcher) { matrixClient.sendMessage(roomId, text) }
 
                         _state.value = PipelineState.Processing("Waiting for crew")
                         response = try {
@@ -198,9 +203,7 @@ class MainViewModel(
         sttEngine.close()
         ttsEngine.close()
         matrixClient?.let { client ->
-            runBlocking {
-                withContext(NonCancellable) { client.stop() }
-            }
+            runBlocking(ioDispatcher + NonCancellable) { client.stop() }
         }
     }
 
@@ -210,11 +213,12 @@ class MainViewModel(
         private val matrixClient: MatrixClient?,
         private val roomId: String?,
         private val audioFileProvider: () -> File,
+        private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-                return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider) as T
+                return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider, ioDispatcher) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
