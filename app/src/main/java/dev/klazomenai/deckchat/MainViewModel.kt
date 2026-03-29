@@ -203,7 +203,7 @@ class MainViewModel(
         sttEngine.close()
         ttsEngine.close()
         matrixClient?.let { client ->
-            runBlocking(ioDispatcher + NonCancellable) { client.stop() }
+            runBlocking(Dispatchers.IO + NonCancellable) { client.stop() }
         }
     }
 
