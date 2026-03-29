@@ -171,11 +171,26 @@ class MainActivity : AppCompatActivity() {
             is PipelineState.Error -> errorText(state.error) to R.color.state_error
         }
 
-        // Show transcription text in detail view when available
+        // Show detail text for transcription results and error messages
         when (state) {
             is PipelineState.Transcribed -> {
                 detail.text = state.text
                 detail.visibility = View.VISIBLE
+            }
+            is PipelineState.Error -> {
+                val detailMsg = when (val err = state.error) {
+                    is PipelineError.SttFailed -> err.message
+                    is PipelineError.TtsFailed -> err.message
+                    is PipelineError.MatrixFailed -> err.message
+                    else -> null
+                }
+                if (detailMsg != null) {
+                    detail.text = detailMsg
+                    detail.visibility = View.VISIBLE
+                } else {
+                    detail.text = ""
+                    detail.visibility = View.GONE
+                }
             }
             else -> {
                 detail.text = ""
@@ -272,7 +287,13 @@ class MainActivity : AppCompatActivity() {
     private fun errorText(error: PipelineError): String = when (error) {
         is PipelineError.PermissionDenied -> getString(R.string.error_permission_denied)
         is PipelineError.PermissionPermanentlyDenied -> getString(R.string.error_permission_permanently_denied)
-        else -> getString(R.string.state_error)
+        is PipelineError.MicBusy -> getString(R.string.error_mic_busy)
+        is PipelineError.AudioInitFailed -> getString(R.string.error_audio_init_failed)
+        is PipelineError.ModelMissing -> getString(R.string.error_model_missing)
+        is PipelineError.BluetoothLost -> getString(R.string.error_bluetooth_lost)
+        is PipelineError.SttFailed -> getString(R.string.error_stt_failed, error.message)
+        is PipelineError.TtsFailed -> getString(R.string.error_tts_failed, error.message)
+        is PipelineError.MatrixFailed -> getString(R.string.error_matrix_failed, error.message)
     }
 
     private fun showPermanentDenialDialog() {
