@@ -132,12 +132,19 @@ class RecordingService : Service() {
             return
         }
 
+        val startTimeMs = System.currentTimeMillis()
         recordingThread = Thread {
             val buffer = ByteArray(bufferSize)
+            var lastProgressMs = startTimeMs
             while (isRecording) {
                 val read = audioRecord?.read(buffer, 0, buffer.size) ?: -1
                 if (read > 0) {
                     audioBuffer.add(buffer.copyOf(read))
+                    val now = System.currentTimeMillis()
+                    if (now - lastProgressMs >= PROGRESS_INTERVAL_MS) {
+                        lastProgressMs = now
+                        emitEvent(ServiceEvent.RecordingProgress(now - startTimeMs))
+                    }
                 } else if (read < 0) {
                     // AudioRecord error — stop recording and emit error
                     isRecording = false
@@ -248,6 +255,7 @@ class RecordingService : Service() {
         private const val SAMPLE_RATE = 16000
         private const val RECORDING_FILENAME = "recording.pcm"
         private const val THREAD_JOIN_TIMEOUT_MS = 2000L
+        private const val PROGRESS_INTERVAL_MS = 500L
 
         /**
          * App-wide listener. Set from Activity/Application before service starts.

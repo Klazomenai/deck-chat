@@ -213,4 +213,56 @@ class MainViewModelTest {
         assertEquals(RecordingService.ACTION_START, action)
         assertEquals(PipelineState.Recording, viewModel.state.value)
     }
+
+    // --- Recording duration ---
+
+    @Test
+    fun `recording progress updates duration flow`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingProgress(1500L))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1500L, viewModel.recordingDurationMs.value)
+    }
+
+    @Test
+    fun `recording started resets duration to zero`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingProgress(3000L))
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(3000L, viewModel.recordingDurationMs.value)
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStarted)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(0L, viewModel.recordingDurationMs.value)
+    }
+
+    @Test
+    fun `recording stopped resets duration to zero`() = runTest {
+        val viewModel = createViewModel(sttResult = "")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingProgress(2000L))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(0L, viewModel.recordingDurationMs.value)
+    }
+
+    @Test
+    fun `recording progress does not change pipeline state`() = runTest {
+        val viewModel = createViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.setState(PipelineState.Recording)
+        RecordingService.emitEvent(ServiceEvent.RecordingProgress(500L))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(PipelineState.Recording, viewModel.state.value)
+    }
 }

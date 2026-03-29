@@ -15,6 +15,7 @@
     <!-- Pipeline state labels -->
     <string name="state_idle">Idle</string>
     <string name="state_recording">Recording</string>
+    <string name="state_recording_duration">Recording: %1$s</string>
     <string name="state_processing">Processing</string>
     <string name="state_transcribed">Transcribed</string>
     <string name="state_speaking">%1$s is speaking</string>

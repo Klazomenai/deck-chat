@@ -1,6 +1,7 @@
 package dev.klazomenai.deckchat
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -27,6 +28,24 @@ class ServiceEventTest {
         assertEquals(
             ServiceEvent.Error(PipelineError.PermissionDenied),
             ServiceEvent.Error(PipelineError.PermissionDenied),
+        )
+    }
+
+    @Test
+    fun `recording progress carries duration`() {
+        val event = ServiceEvent.RecordingProgress(1500L)
+        assertEquals(1500L, event.durationMs)
+    }
+
+    @Test
+    fun `recording progress equality based on duration`() {
+        assertEquals(
+            ServiceEvent.RecordingProgress(1000L),
+            ServiceEvent.RecordingProgress(1000L),
+        )
+        assertNotEquals(
+            ServiceEvent.RecordingProgress(1000L),
+            ServiceEvent.RecordingProgress(2000L),
         )
     }
 }

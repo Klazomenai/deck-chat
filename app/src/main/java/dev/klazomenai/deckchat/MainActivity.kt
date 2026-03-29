@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val stateLabel = findViewById<TextView>(R.id.state_label)
+        val stateDetail = findViewById<TextView>(R.id.state_detail)
         val stateIndicator = findViewById<View>(R.id.state_indicator)
         val settingsFab = findViewById<FloatingActionButton>(R.id.settings_fab)
         val pttFab = findViewById<FloatingActionButton>(R.id.ptt_fab)
@@ -75,8 +76,20 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
-                    updateStateUi(state, stateLabel, stateIndicator)
+                    updateStateUi(state, stateLabel, stateDetail, stateIndicator)
                     updatePttFab(state, pttFab)
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.recordingDurationMs.collect { durationMs ->
+                    if (viewModel.state.value is PipelineState.Recording && durationMs > 0L) {
+                        val seconds = durationMs / 1000.0
+                        val formatted = String.format(java.util.Locale.ROOT, "%.1fs", seconds)
+                        stateLabel.text = getString(R.string.state_recording_duration, formatted)
+                    }
                 }
             }
         }
@@ -146,6 +159,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateStateUi(
         state: PipelineState,
         label: TextView,
+        detail: TextView,
         indicator: View,
     ) {
         val (text, colorRes) = when (state) {
@@ -155,6 +169,18 @@ class MainActivity : AppCompatActivity() {
             is PipelineState.Transcribed -> getString(R.string.state_transcribed) to R.color.state_transcribed
             is PipelineState.Speaking -> getString(R.string.state_speaking, state.crewName) to R.color.state_speaking
             is PipelineState.Error -> errorText(state.error) to R.color.state_error
+        }
+
+        // Show transcription text in detail view when available
+        when (state) {
+            is PipelineState.Transcribed -> {
+                detail.text = state.text
+                detail.visibility = View.VISIBLE
+            }
+            else -> {
+                detail.text = ""
+                detail.visibility = View.GONE
+            }
         }
 
         // Crossfade text label: fade out, swap text, fade in
