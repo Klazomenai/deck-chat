@@ -67,6 +67,14 @@ class SecureStorage(
         get() = prefs.getString(KEY_ROOM_ID, null)
         set(value) = prefs.edit().putString(KEY_ROOM_ID, value).apply()
 
+    var voiceProfile: String?
+        get() = prefs.getString(KEY_VOICE_PROFILE, null)
+        set(value) = prefs.edit().putString(KEY_VOICE_PROFILE, value).apply()
+
+    var onboardingComplete: Boolean
+        get() = prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
+        set(value) = prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETE, value).apply()
+
     // --- Sensitive tokens (encrypted via TokenEncryptor) ---
 
     var accessToken: String?
@@ -195,6 +203,8 @@ class SecureStorage(
         private const val KEY_DEVICE_ID = "device_id"
         private const val KEY_SLIDING_SYNC_VERSION = "sliding_sync_version"
         private const val KEY_ROOM_ID = "room_id"
+        private const val KEY_VOICE_PROFILE = "voice_profile"
+        private const val KEY_ONBOARDING_COMPLETE = "onboarding_complete"
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_SQLITE_PASSPHRASE = "sqlite_passphrase"

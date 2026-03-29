@@ -31,6 +31,7 @@ class MainViewModel(
     private val matrixClient: MatrixClient?,
     private val roomId: String?,
     private val audioFileProvider: () -> File,
+    private val defaultCrew: String = DEFAULT_CREW,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
@@ -135,9 +136,9 @@ class MainViewModel(
                     ttsEngine.speak(response.crewName, response.body)
                 } else {
                     // Local echo: TTS reads back transcription with default crew
-                    val displayName = CrewRegistry.lookup(DEFAULT_CREW).displayName
+                    val displayName = CrewRegistry.lookup(defaultCrew).displayName
                     _state.value = PipelineState.Speaking(displayName)
-                    ttsEngine.speak(DEFAULT_CREW, text)
+                    ttsEngine.speak(defaultCrew, text)
                 }
 
                 _state.value = PipelineState.Idle
@@ -223,12 +224,13 @@ class MainViewModel(
         private val matrixClient: MatrixClient?,
         private val roomId: String?,
         private val audioFileProvider: () -> File,
+        private val defaultCrew: String = DEFAULT_CREW,
         private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-                return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider, ioDispatcher) as T
+                return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider, defaultCrew, ioDispatcher) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

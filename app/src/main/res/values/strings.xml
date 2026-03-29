@@ -43,6 +43,29 @@
     <string name="permission_settings_message">Microphone permission was permanently denied. Please enable it in the app settings to use voice recording.</string>
     <string name="permission_settings_open">Open Settings</string>
 
+    <!-- Onboarding -->
+    <string name="onboarding_step_indicator">Step %1$d of %2$d</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_finish">Finish</string>
+    <string name="onboarding_login_title">Connect to Matrix</string>
+    <string name="onboarding_login_subtitle">Enter your homeserver credentials</string>
+    <string name="onboarding_username_hint">\@user:example.com</string>
+    <string name="onboarding_password_label">Password</string>
+    <string name="onboarding_voice_title">Choose your voice</string>
+    <string name="onboarding_voice_subtitle">Select the crew member voice for responses</string>
+    <string name="onboarding_voice_maren">Maren \u2014 British English</string>
+    <string name="onboarding_voice_crest">Crest \u2014 American English</string>
+    <string name="onboarding_permissions_title">Permissions</string>
+    <string name="onboarding_permissions_subtitle">DeckChat needs these permissions to function</string>
+    <string name="onboarding_grant_audio">Grant microphone access</string>
+    <string name="onboarding_grant_bluetooth">Grant Bluetooth access</string>
+    <string name="onboarding_permission_granted">Granted</string>
+    <string name="onboarding_permission_required">Required</string>
+    <string name="onboarding_permission_optional">Optional</string>
+    <string name="onboarding_bluetooth_title">Bluetooth headset</string>
+    <string name="onboarding_bluetooth_guidance">For the best experience, pair a Bluetooth headset before using DeckChat.\n\nYou can use DeckChat without a headset \u2014 audio will play through the device speaker and record through the built\u2011in microphone.</string>
+
     <!-- Content descriptions -->
     <string name="cd_settings">Settings</string>
     <string name="cd_ptt_start">Start recording</string>
