@@ -10,3 +10,8 @@
 -keep class net.java.dev.jna.** { *; }
 -keep class org.matrix.rustcomponents.sdk.** { *; }
 -keep class uniffi.** { *; }
+
+# Google Tink (transitive via androidx.security:security-crypto / EncryptedSharedPreferences)
+# references JSR-305 annotations that are not present at runtime. Safe to suppress.
+-dontwarn javax.annotation.Nullable
+-dontwarn javax.annotation.concurrent.GuardedBy
