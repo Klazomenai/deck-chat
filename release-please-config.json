@@ -9,7 +9,7 @@
   "include-component-in-tag": false,
   "pull-request-title-pattern": "chore${scope}: release${component} ${version} 🗺️",
   "pull-request-header": "🏴‍☠️ All hands on deck! New cargo manifest ready for inspection",
-  "pull-request-footer": "🏴‍☠️ Logged by the [Quartermaster](https://github.com/googleapis/release-please). All hands review before we set sail.",
+  "pull-request-footer": "🏴‍☠️ Logged by the [Quartermaster](../../.github/workflows/RELEASE-PLEASE.md). All hands review before we set sail.",
   "changelog-sections": [
     {"type": "feat", "section": "⛵ New Rigging", "hidden": false},
     {"type": "fix", "section": "🔧 Hull Repairs", "hidden": false},
