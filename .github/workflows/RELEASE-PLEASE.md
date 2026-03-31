@@ -67,11 +67,12 @@ Conventional commit types map to changelog sections:
 
 | Commit Type | Changelog Section | Visible |
 |-------------|------------------|---------|
-| `feat` | Added | Yes |
-| `fix` | Fixed | Yes |
-| `perf`, `refactor` | Changed | Yes |
-| `revert` | Reverted | Yes |
-| `security` | Security | Yes |
+| `feat` | ⛵ New Rigging | Yes |
+| `fix` | 🔧 Hull Repairs | Yes |
+| `perf` | ⚡ Trimmed the Sails | Yes |
+| `refactor` | ♻️ Refitted | Yes |
+| `revert` | ↩️ Struck from the Log | Yes |
+| `security` | 🔐 Battened Hatches | Yes |
 | `docs`, `style`, `chore`, `test`, `build`, `ci` | _(hidden)_ | No |
 
 ## APK Signing
