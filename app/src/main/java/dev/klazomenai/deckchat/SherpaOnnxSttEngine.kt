@@ -1,6 +1,7 @@
 package dev.klazomenai.deckchat
 
 import android.content.Context
+import android.util.Log
 import com.k2fsa.sherpa.onnx.FeatureConfig
 import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineRecognizer
@@ -121,8 +122,18 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
         private const val SAMPLE_RATE = 16000
         private const val FEATURE_DIM = 80
 
+        private const val TAG = "DeckChat.SttEngine"
+
         init {
-            System.loadLibrary("sherpa-onnx-jni")
+            try {
+                System.loadLibrary("sherpa-onnx-jni")
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "Failed to load sherpa-onnx-jni native library", e)
+                throw e
+            } catch (e: SecurityException) {
+                Log.e(TAG, "Failed to load sherpa-onnx-jni native library", e)
+                throw e
+            }
         }
     }
 }

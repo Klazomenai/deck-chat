@@ -2,6 +2,7 @@ package dev.klazomenai.deckchat
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.util.Log
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
@@ -164,8 +165,18 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
     }
 
     companion object {
+        private const val TAG = "DeckChat.TtsEngine"
+
         init {
-            System.loadLibrary("sherpa-onnx-jni")
+            try {
+                System.loadLibrary("sherpa-onnx-jni")
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "Failed to load sherpa-onnx-jni native library", e)
+                throw e
+            } catch (e: SecurityException) {
+                Log.e(TAG, "Failed to load sherpa-onnx-jni native library", e)
+                throw e
+            }
         }
     }
 }
