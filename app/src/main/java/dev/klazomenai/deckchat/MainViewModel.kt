@@ -1,5 +1,6 @@
 package dev.klazomenai.deckchat
 
+import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -74,20 +75,27 @@ class MainViewModel(
         matrixClient ?: return
         val room = roomId ?: return
 
+        Log.d(TAG, "Starting Matrix sync init for room=$room")
+
         viewModelScope.launch {
             try {
                 withContext(ioDispatcher) {
+                    Log.d(TAG, "Restoring Matrix session")
                     matrixClient.restoreSession()
 
+                    Log.d(TAG, "Session restored, starting sync")
                     matrixClient.startSync { crewMessage ->
                         viewModelScope.launch {
                             pendingResponse?.complete(crewMessage)
                         }
                     }
 
+                    Log.d(TAG, "Sync started, listening to room")
                     matrixClient.listenToRoom(room)
+                    Log.d(TAG, "Timeline listener attached")
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "Matrix sync init failed: ${e.javaClass.name}", e)
                 try {
                     withContext(ioDispatcher) { matrixClient.stop() }
                 } catch (_: Exception) { /* best-effort cleanup */ }
@@ -237,6 +245,7 @@ class MainViewModel(
     }
 
     companion object {
+        private const val TAG = "DeckChat.ViewModel"
         internal const val RESPONSE_TIMEOUT_MS = 30_000L
         internal const val DEFAULT_CREW = "maren"
     }
