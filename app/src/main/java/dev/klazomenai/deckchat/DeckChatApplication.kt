@@ -2,7 +2,7 @@ package dev.klazomenai.deckchat
 
 import android.app.Application
 import android.util.Log
-import kotlin.system.exitProcess
+import android.os.Process
 
 /**
  * Application subclass that installs a global [Thread.UncaughtExceptionHandler].
@@ -41,7 +41,7 @@ class DeckChatApplication : Application() {
             if (delegate != null) {
                 delegate.uncaughtException(thread, throwable)
             } else {
-                exitProcess(1)
+                Process.killProcess(Process.myPid())
             }
         }
     }
