@@ -25,6 +25,7 @@
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
 
     <application
+        android:name=".DeckChatApplication"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.DeckChat">
