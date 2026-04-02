@@ -18,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -160,19 +161,22 @@ class OnboardingActivity : AppCompatActivity() {
         lifecycleScope.launch(coroutineErrorHandler) {
             try {
                 withContext(Dispatchers.IO) {
-                    Log.d(TAG, "Creating RustMatrixClient for $url")
+                    val host = Uri.parse(url).host ?: "unknown"
+                    Log.d(TAG, "Creating RustMatrixClient for $host")
                     val client = RustMatrixClient(applicationContext, storage)
-                    Log.d(TAG, "RustMatrixClient created, logging in as $username")
+                    Log.d(TAG, "RustMatrixClient created, starting login")
                     client.login(url, username, password)
                     Log.d(TAG, "Login successful")
                 }
                 storage.roomId = roomId
                 loginProgress.visibility = View.GONE
                 advanceStep()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Login failed: ${e::class.simpleName}", e)
+                Log.e(TAG, "Login failed: ${e.javaClass.name}", e)
                 loginProgress.visibility = View.GONE
-                loginError.text = e.message ?: "Login failed (${e::class.simpleName})"
+                loginError.text = e.message ?: "Login failed (${e.javaClass.name})"
                 loginError.visibility = View.VISIBLE
                 btnNext.isEnabled = true
             }
