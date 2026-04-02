@@ -164,8 +164,15 @@ class SherpaOnnxTtsEngine(private val context: Context) : TtsEngine {
     }
 
     companion object {
+        private const val TAG = "DeckChat.TtsEngine"
+
         init {
-            System.loadLibrary("sherpa-onnx-jni")
+            try {
+                System.loadLibrary("sherpa-onnx-jni")
+            } catch (e: UnsatisfiedLinkError) {
+                android.util.Log.e(TAG, "Failed to load sherpa-onnx-jni native library", e)
+                throw e
+            }
         }
     }
 }

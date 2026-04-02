@@ -121,8 +121,15 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
         private const val SAMPLE_RATE = 16000
         private const val FEATURE_DIM = 80
 
+        private const val TAG = "DeckChat.SttEngine"
+
         init {
-            System.loadLibrary("sherpa-onnx-jni")
+            try {
+                System.loadLibrary("sherpa-onnx-jni")
+            } catch (e: UnsatisfiedLinkError) {
+                android.util.Log.e(TAG, "Failed to load sherpa-onnx-jni native library", e)
+                throw e
+            }
         }
     }
 }
