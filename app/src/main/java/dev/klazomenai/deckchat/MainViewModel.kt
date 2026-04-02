@@ -75,8 +75,6 @@ class MainViewModel(
         matrixClient ?: return
         val room = roomId ?: return
 
-        Log.d(TAG, "Starting Matrix sync init for room=$room")
-
         viewModelScope.launch {
             try {
                 withContext(ioDispatcher) {
