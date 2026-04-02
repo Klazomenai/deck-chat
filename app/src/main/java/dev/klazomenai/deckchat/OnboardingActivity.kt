@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -17,6 +18,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -145,18 +148,35 @@ class OnboardingActivity : AppCompatActivity() {
         loginError.visibility = View.GONE
         btnNext.isEnabled = false
 
-        lifecycleScope.launch {
+        val coroutineErrorHandler = CoroutineExceptionHandler { _, throwable ->
+            Log.e(TAG, "Unhandled coroutine exception during login", throwable)
+            runOnUiThread {
+                loginProgress.visibility = View.GONE
+                loginError.text = throwable.message ?: "Login failed unexpectedly"
+                loginError.visibility = View.VISIBLE
+                btnNext.isEnabled = true
+            }
+        }
+
+        lifecycleScope.launch(coroutineErrorHandler) {
             try {
                 withContext(Dispatchers.IO) {
+                    val host = Uri.parse(url).host ?: "unknown"
+                    Log.d(TAG, "Creating RustMatrixClient for $host")
                     val client = RustMatrixClient(applicationContext, storage)
+                    Log.d(TAG, "RustMatrixClient created, starting login")
                     client.login(url, username, password)
+                    Log.d(TAG, "Login successful")
                 }
                 storage.roomId = roomId
                 loginProgress.visibility = View.GONE
                 advanceStep()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                Log.e(TAG, "Login failed: ${e.javaClass.name}", e)
                 loginProgress.visibility = View.GONE
-                loginError.text = e.message ?: "Login failed"
+                loginError.text = e.message ?: "Login failed (${e.javaClass.name})"
                 loginError.visibility = View.VISIBLE
                 btnNext.isEnabled = true
             }
@@ -225,6 +245,7 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val TAG = "DeckChat.Onboarding"
         private const val STEP_LOGIN = 0
         private const val STEP_VOICE = 1
         private const val STEP_PERMISSIONS = 2
