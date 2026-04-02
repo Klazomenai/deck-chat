@@ -2,6 +2,7 @@ package dev.klazomenai.deckchat
 
 import android.app.Application
 import android.util.Log
+import kotlin.system.exitProcess
 
 /**
  * Application subclass that installs a global [Thread.UncaughtExceptionHandler].
@@ -21,10 +22,27 @@ class DeckChatApplication : Application() {
     }
 
     private fun installCrashHandler() {
-        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+        val current = Thread.getDefaultUncaughtExceptionHandler()
+        if (current is CrashLoggingHandler) return
+        Thread.setDefaultUncaughtExceptionHandler(CrashLoggingHandler(current))
+    }
+
+    /**
+     * Named handler class so [installCrashHandler] can detect double-installation
+     * via an `instanceof` check. Delegates to [delegate] after logging; if [delegate]
+     * is null (rare — test/embedded runtimes), terminates the process to avoid leaving
+     * it in an undefined state.
+     */
+    internal class CrashLoggingHandler(
+        private val delegate: Thread.UncaughtExceptionHandler?,
+    ) : Thread.UncaughtExceptionHandler {
+        override fun uncaughtException(thread: Thread, throwable: Throwable) {
             Log.e(TAG, "Uncaught exception on thread ${thread.name}", throwable)
-            defaultHandler?.uncaughtException(thread, throwable)
+            if (delegate != null) {
+                delegate.uncaughtException(thread, throwable)
+            } else {
+                exitProcess(1)
+            }
         }
     }
 

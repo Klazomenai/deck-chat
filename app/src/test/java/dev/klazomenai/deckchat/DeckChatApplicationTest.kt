@@ -1,6 +1,6 @@
 package dev.klazomenai.deckchat
 
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,12 +17,27 @@ class DeckChatApplicationTest {
     }
 
     @Test
-    fun `uncaught exception handler is installed after onCreate`() {
+    fun `uncaught exception handler is CrashLoggingHandler after onCreate`() {
+        // Ensure application has been created (triggers onCreate → installCrashHandler)
+        RuntimeEnvironment.getApplication()
         val handler = Thread.getDefaultUncaughtExceptionHandler()
-        assertNotNull(handler)
-        // The handler is our wrapper, not the raw system handler.
         assertTrue(
-            handler!!.javaClass.name != "com.android.internal.os.RuntimeInit\$KillApplicationHandler",
+            "Expected CrashLoggingHandler, got ${handler?.javaClass?.name}",
+            handler is DeckChatApplication.CrashLoggingHandler,
+        )
+    }
+
+    @Test
+    fun `installCrashHandler is idempotent`() {
+        RuntimeEnvironment.getApplication()
+        val handlerBefore = Thread.getDefaultUncaughtExceptionHandler()
+        // Calling onCreate again should not wrap the handler a second time
+        (RuntimeEnvironment.getApplication() as DeckChatApplication).onCreate()
+        val handlerAfter = Thread.getDefaultUncaughtExceptionHandler()
+        assertSame(
+            "Handler should not be re-wrapped on second onCreate",
+            handlerBefore,
+            handlerAfter,
         )
     }
 }
