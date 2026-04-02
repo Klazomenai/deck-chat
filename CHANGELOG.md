@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.0-alpha.1](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha...v0.1.0-alpha.1) (2026-04-02)
+
+
+### ⛵ New Rigging
+
+* add global UncaughtExceptionHandler for crash logging 🐛 ([#112](https://github.com/Klazomenai/deck-chat/issues/112)) ([41b986d](https://github.com/Klazomenai/deck-chat/commit/41b986d4a8e3f62da768d583f3bd8c670a615158))
+
+
+### 🔧 Hull Repairs
+
+* add defensive logging and error recovery to onboarding login 🐛 ([#114](https://github.com/Klazomenai/deck-chat/issues/114)) ([58e2941](https://github.com/Klazomenai/deck-chat/commit/58e294105091a9326e22cea2e9617adfef887d62))
+* add defensive logging to MainViewModel Matrix sync init 🐛 ([#117](https://github.com/Klazomenai/deck-chat/issues/117)) ([01cd196](https://github.com/Klazomenai/deck-chat/commit/01cd19688934807cf433cda95a47d49fa8551c8e))
+* log SecureStorage decryption failures instead of silent discard 🐛 ([#115](https://github.com/Klazomenai/deck-chat/issues/115)) ([ad04ab2](https://github.com/Klazomenai/deck-chat/commit/ad04ab2c384dad747e32985be66c727a8c0dc996)), closes [#109](https://github.com/Klazomenai/deck-chat/issues/109)
+* wrap native library loading with error handling and logging 🐛 ([#116](https://github.com/Klazomenai/deck-chat/issues/116)) ([7918028](https://github.com/Klazomenai/deck-chat/commit/79180281041da0c66c70e033fb380738744b147d))
+
 ## [0.1.0-alpha](https://github.com/Klazomenai/deck-chat/compare/v0.0.1...v0.1.0-alpha) (2026-03-29)
 
 
