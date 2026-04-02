@@ -3,6 +3,7 @@ package dev.klazomenai.deckchat
 import android.content.Context
 import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
+import android.util.Log
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -162,7 +163,8 @@ class SecureStorage(
                 val cipher = Cipher.getInstance("AES/GCM/NoPadding")
                 cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(128, iv))
                 String(cipher.doFinal(ciphertext), Charsets.UTF_8)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to decrypt key=$key, clearing stored value", e)
                 prefs.edit().remove(key).remove("${key}_iv").apply()
                 null
             }
@@ -196,6 +198,7 @@ class SecureStorage(
     }
 
     companion object {
+        private const val TAG = "DeckChat.SecureStorage"
         private const val PREFS_NAME = "deckchat_prefs"
         private const val KEYSTORE_ALIAS = "deckchat_token_key"
         private const val KEY_HOMESERVER_URL = "homeserver_url"
