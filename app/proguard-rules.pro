@@ -7,7 +7,7 @@
 
 # matrix-rust-sdk uses JNA for the native bridge (UniFFI-generated Kotlin bindings).
 # The SDK's consumer-rules.pro is empty, so these must be declared here.
--keep class net.java.dev.jna.** { *; }
+-keep class com.sun.jna.** { *; }
 -keep class org.matrix.rustcomponents.sdk.** { *; }
 -keep class uniffi.** { *; }
 
