@@ -21,7 +21,7 @@ mkdir -p "$DEST"
 
 echo "Downloading Whisper Tiny EN (int8 ONNX) to $DEST..."
 
-for file in "tiny.en-encoder.int8.onnx" "tiny.en-decoder.int8.onnx"; do
+for file in "tiny.en-encoder.int8.onnx" "tiny.en-decoder.int8.onnx" "tiny.en-tokens.txt"; do
     dest_path="$DEST/$file"
     if [ -s "$dest_path" ]; then
         echo "  $file already present and non-empty, skipping"

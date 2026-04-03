@@ -38,11 +38,13 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
         val destDir = File(context.filesDir, "stt")
         val encoderFile = File(destDir, ENCODER_FILE)
         val decoderFile = File(destDir, DECODER_FILE)
+        val tokensFile = File(destDir, TOKENS_FILE)
 
         if (destDir.exists()) {
             val encoderOk = encoderFile.exists() && encoderFile.length() > 0
             val decoderOk = decoderFile.exists() && decoderFile.length() > 0
-            if (encoderOk && decoderOk) return destDir
+            val tokensOk = tokensFile.exists() && tokensFile.length() > 0
+            if (encoderOk && decoderOk && tokensOk) return destDir
         }
 
         destDir.mkdirs()
@@ -51,8 +53,8 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
         require(!assetFiles.isNullOrEmpty()) {
             "STT model assets not found in $ASSET_DIR — run ./gradlew downloadSttModels first"
         }
-        require(assetFiles.contains(ENCODER_FILE) && assetFiles.contains(DECODER_FILE)) {
-            "Expected $ENCODER_FILE and $DECODER_FILE in assets/$ASSET_DIR, found: ${assetFiles.toList()}"
+        require(assetFiles.contains(ENCODER_FILE) && assetFiles.contains(DECODER_FILE) && assetFiles.contains(TOKENS_FILE)) {
+            "Expected $ENCODER_FILE, $DECODER_FILE and $TOKENS_FILE in assets/$ASSET_DIR, found: ${assetFiles.toList()}"
         }
 
         assetFiles.forEach { name ->
@@ -77,6 +79,7 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
                     language = "en",
                     task = "transcribe",
                 ),
+                tokens = "$sttDir/$TOKENS_FILE",
                 numThreads = 2,
                 debug = false,
                 provider = "cpu",
@@ -135,6 +138,7 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
         private const val ASSET_DIR = "stt"
         private const val ENCODER_FILE = "tiny.en-encoder.int8.onnx"
         private const val DECODER_FILE = "tiny.en-decoder.int8.onnx"
+        private const val TOKENS_FILE = "tiny.en-tokens.txt"
         private const val SAMPLE_RATE = 16000
         private const val FEATURE_DIM = 80
 

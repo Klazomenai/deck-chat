@@ -67,8 +67,9 @@ tasks.register<Exec>("downloadSttModels") {
     workingDir = rootProject.rootDir
     commandLine("bash", "${rootProject.rootDir}/scripts/download-stt-models.sh")
     onlyIf {
-        !file("src/main/assets/stt/tiny.en-encoder.int8.onnx").exists() ||
-        !file("src/main/assets/stt/tiny.en-decoder.int8.onnx").exists()
+        val sttDir = "src/main/assets/stt"
+        listOf("tiny.en-encoder.int8.onnx", "tiny.en-decoder.int8.onnx", "tiny.en-tokens.txt")
+            .any { !file("$sttDir/$it").exists() || file("$sttDir/$it").length() == 0L }
     }
 }
 
