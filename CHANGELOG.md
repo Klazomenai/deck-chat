@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.4](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-04-03)
+
+
+### 🔧 Hull Repairs
+
+* use wildcard dontwarn for JNA java.awt references 🐛 ([#126](https://github.com/Klazomenai/deck-chat/issues/126)) ([880ff2e](https://github.com/Klazomenai/deck-chat/commit/880ff2e0d7171e3e90f0d118e23c97b2563d9a4d)), closes [#122](https://github.com/Klazomenai/deck-chat/issues/122)
+
 ## [0.1.0-alpha.3](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-04-03)
 
 
