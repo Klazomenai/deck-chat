@@ -65,7 +65,7 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
     }
 
     private fun createRecognizer(): OfflineRecognizer {
-        Log.d(TAG, "Copying model assets to disk")
+        Log.d(TAG, "Ensuring model assets are present on disk")
         val sttDir = copyAssetsToDisk().absolutePath
         Log.d(TAG, "Model dir: $sttDir")
         val config = OfflineRecognizerConfig(
@@ -84,7 +84,7 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
         )
         Log.d(TAG, "Creating OfflineRecognizer from config")
         val rec = OfflineRecognizer(config = config)
-        Log.d(TAG, "OfflineRecognizer created: $rec")
+        Log.d(TAG, "OfflineRecognizer created")
         return rec
     }
 
@@ -100,7 +100,7 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
         val rec = recognizer
         Log.d(TAG, "Recognizer ready, creating stream")
         val stream = rec.createStream()
-        Log.d(TAG, "Stream created: $stream")
+        Log.d(TAG, "Stream created")
         try {
             val bytes = audioFile.readBytes()
             require(bytes.isNotEmpty()) {
@@ -118,7 +118,7 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
             rec.decode(stream)
             Log.d(TAG, "decode complete, getting result")
             val text = rec.getResult(stream).text
-            Log.d(TAG, "Transcription result: ${text.take(50)}")
+            Log.d(TAG, "Transcription complete, length=${text.length}")
             text
         } finally {
             stream.release()
