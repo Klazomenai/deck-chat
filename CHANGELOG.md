@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.6](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-04-03)
+
+
+### 🔧 Hull Repairs
+
+* download and configure tiny.en-tokens.txt for Whisper STT 🐛 ([#134](https://github.com/Klazomenai/deck-chat/issues/134)) ([0b78be5](https://github.com/Klazomenai/deck-chat/commit/0b78be529d245413fdfac338a2867ef69f7f8e53))
+
 ## [0.1.0-alpha.5](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-04-03)
 
 
