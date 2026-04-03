@@ -5,17 +5,16 @@
 # The JNI code looks up these JVM classes/methods by name, so ProGuard must not obfuscate or strip them.
 -keep class com.k2fsa.sherpa.onnx.** { *; }
 
-# matrix-rust-sdk uses JNA for the native bridge (UniFFI-generated Kotlin bindings).
-# The SDK's consumer-rules.pro is empty, so these must be declared here.
+# JNA — transitive dependency of org.matrix.rustcomponents:sdk-android (UniFFI Kotlin bindings).
+# JNA ships no consumer-rules.pro, so these must be declared here.
+# Rules sourced from JNA FAQ: java-native-access/jna/www/FrequentlyAskedQuestions.md
 -keep class com.sun.jna.** { *; }
 -keep class org.matrix.rustcomponents.sdk.** { *; }
 -keep class uniffi.** { *; }
 
-# JNA references java.awt classes (Native$AWT) that do not exist on Android.
-# These code paths are never reached on Android — safe to suppress.
--dontwarn java.awt.GraphicsEnvironment
--dontwarn java.awt.HeadlessException
--dontwarn java.awt.Window
+# JNA's Native$AWT references java.awt classes not available on Android.
+# These code paths are never reached (JNA detects Android at runtime via Platform.ANDROID).
+-dontwarn java.awt.**
 
 # Google Tink (transitive via androidx.security:security-crypto / EncryptedSharedPreferences)
 # references JSR-305 annotations that are not present at runtime. Safe to suppress.
