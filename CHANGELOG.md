@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.2](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-04-03)
+
+
+### 🔧 Hull Repairs
+
+* correct JNA ProGuard keep rule to com.sun.jna package 🐛 ([#119](https://github.com/Klazomenai/deck-chat/issues/119)) ([a12963a](https://github.com/Klazomenai/deck-chat/commit/a12963a2ebe58c67151df6bdd5c5048ac3324f16)), closes [#118](https://github.com/Klazomenai/deck-chat/issues/118)
+
 ## [0.1.0-alpha.1](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha...v0.1.0-alpha.1) (2026-04-02)
 
 
