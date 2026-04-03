@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.5](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-04-03)
+
+
+### 🔧 Hull Repairs
+
+* add defensive logging to SherpaOnnxSttEngine transcription path 🐛 ([#131](https://github.com/Klazomenai/deck-chat/issues/131)) ([49d3bce](https://github.com/Klazomenai/deck-chat/commit/49d3bce41c17c7ad483b487feedaabaae0687870))
+
 ## [0.1.0-alpha.4](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-04-03)
 
 
