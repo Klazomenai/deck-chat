@@ -68,7 +68,8 @@ tasks.register<Exec>("downloadSttModels") {
     commandLine("bash", "${rootProject.rootDir}/scripts/download-stt-models.sh")
     onlyIf {
         !file("src/main/assets/stt/tiny.en-encoder.int8.onnx").exists() ||
-        !file("src/main/assets/stt/tiny.en-decoder.int8.onnx").exists()
+        !file("src/main/assets/stt/tiny.en-decoder.int8.onnx").exists() ||
+        !file("src/main/assets/stt/tiny.en-tokens.txt").exists()
     }
 }
 
