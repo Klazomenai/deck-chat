@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.3](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-04-03)
+
+
+### 🔧 Hull Repairs
+
+* add dontwarn for JNA java.awt references missing on Android 🐛 ([#123](https://github.com/Klazomenai/deck-chat/issues/123)) ([3400401](https://github.com/Klazomenai/deck-chat/commit/34004011df64eb4a42b87a023689954d07b9b316)), closes [#122](https://github.com/Klazomenai/deck-chat/issues/122)
+
 ## [0.1.0-alpha.2](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-04-03)
 
 
