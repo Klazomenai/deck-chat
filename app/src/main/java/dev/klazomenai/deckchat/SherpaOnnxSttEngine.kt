@@ -65,7 +65,9 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
     }
 
     private fun createRecognizer(): OfflineRecognizer {
+        Log.d(TAG, "Copying model assets to disk")
         val sttDir = copyAssetsToDisk().absolutePath
+        Log.d(TAG, "Model dir: $sttDir")
         val config = OfflineRecognizerConfig(
             featConfig = FeatureConfig(sampleRate = SAMPLE_RATE, featureDim = FEATURE_DIM),
             modelConfig = OfflineModelConfig(
@@ -80,7 +82,10 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
                 provider = "cpu",
             ),
         )
-        return OfflineRecognizer(config = config)
+        Log.d(TAG, "Creating OfflineRecognizer from config")
+        val rec = OfflineRecognizer(config = config)
+        Log.d(TAG, "OfflineRecognizer created: $rec")
+        return rec
     }
 
     /**
@@ -91,7 +96,11 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
      * non-PCM data will produce garbage output.
      */
     override suspend fun transcribe(audioFile: File): String = withContext(Dispatchers.IO) {
-        val stream = recognizer.createStream()
+        Log.d(TAG, "transcribe() called, file=${audioFile.name}, size=${audioFile.length()}")
+        val rec = recognizer
+        Log.d(TAG, "Recognizer ready, creating stream")
+        val stream = rec.createStream()
+        Log.d(TAG, "Stream created: $stream")
         try {
             val bytes = audioFile.readBytes()
             require(bytes.isNotEmpty()) {
@@ -102,11 +111,18 @@ class SherpaOnnxSttEngine(private val context: Context) : SttEngine {
             }
             val buf = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
             val samples = FloatArray(bytes.size / 2) { buf.short / 32768f }
+            Log.d(TAG, "Audio loaded: ${samples.size} samples (${samples.size / SAMPLE_RATE.toFloat()}s)")
+            Log.d(TAG, "Calling acceptWaveform")
             stream.acceptWaveform(samples, SAMPLE_RATE)
-            recognizer.decode(stream)
-            recognizer.getResult(stream).text
+            Log.d(TAG, "acceptWaveform complete, calling decode")
+            rec.decode(stream)
+            Log.d(TAG, "decode complete, getting result")
+            val text = rec.getResult(stream).text
+            Log.d(TAG, "Transcription result: ${text.take(50)}")
+            text
         } finally {
             stream.release()
+            Log.d(TAG, "Stream released")
         }
     }
 
