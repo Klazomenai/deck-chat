@@ -11,6 +11,12 @@
 -keep class org.matrix.rustcomponents.sdk.** { *; }
 -keep class uniffi.** { *; }
 
+# JNA references java.awt classes (Native$AWT) that do not exist on Android.
+# These code paths are never reached on Android — safe to suppress.
+-dontwarn java.awt.GraphicsEnvironment
+-dontwarn java.awt.HeadlessException
+-dontwarn java.awt.Window
+
 # Google Tink (transitive via androidx.security:security-crypto / EncryptedSharedPreferences)
 # references JSR-305 annotations that are not present at runtime. Safe to suppress.
 -dontwarn javax.annotation.Nullable
