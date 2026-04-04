@@ -1,6 +1,7 @@
 package dev.klazomenai.deckchat
 
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -107,19 +108,22 @@ class RustMatrixClient(
         if (room == null) {
             val timeoutMs = ROOM_SYNC_TIMEOUT_MS
             val pollMs = ROOM_SYNC_POLL_MS
-            val startMs = System.currentTimeMillis()
+            val startMs = SystemClock.elapsedRealtime()
             val deadlineMs = startMs + timeoutMs
 
-            while (room == null && System.currentTimeMillis() < deadlineMs) {
-                val elapsedMs = System.currentTimeMillis() - startMs
-                Log.d(TAG, "Room not yet available, polling in ${pollMs}ms (elapsed ${elapsedMs}ms/${timeoutMs}ms)")
-                onSyncStatusCallback?.invoke("Waiting for room sync (${elapsedMs / 1000}s/${timeoutMs / 1000}s)")
+            while (room == null && SystemClock.elapsedRealtime() < deadlineMs) {
                 delay(pollMs)
                 room = client.getRoom(roomId)
+                if (room == null) {
+                    val elapsedMs = SystemClock.elapsedRealtime() - startMs
+                    Log.d(TAG, "Room not yet available (elapsed ${elapsedMs}ms/${timeoutMs}ms)")
+                    onSyncStatusCallback?.invoke("Waiting for room sync (${elapsedMs / 1000}s/${timeoutMs / 1000}s)")
+                }
             }
 
             if (room != null) {
-                Log.d(TAG, "Room found after ${System.currentTimeMillis() - startMs}ms")
+                Log.d(TAG, "Room found after ${SystemClock.elapsedRealtime() - startMs}ms")
+                onSyncStatusCallback?.invoke("")
             }
         }
         if (room == null) {
