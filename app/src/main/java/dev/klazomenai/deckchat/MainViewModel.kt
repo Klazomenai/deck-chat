@@ -101,8 +101,10 @@ class MainViewModel(
                     matrixClient.listenToRoom(room)
                     Log.d(TAG, "Timeline listener attached")
                 }
+                matrixClient.setSyncStatusCallback(null)
                 _state.value = PipelineState.Idle
             } catch (e: Exception) {
+                matrixClient.setSyncStatusCallback(null)
                 Log.e(TAG, "Matrix sync init failed: ${e.javaClass.name}", e)
                 try {
                     withContext(ioDispatcher) { matrixClient.stop() }

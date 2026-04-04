@@ -43,6 +43,7 @@ class RustMatrixClient(
     private var timelineHandle: TaskHandle? = null
     private var timeline: Timeline? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile
     private var onSyncStatusCallback: ((String) -> Unit)? = null
 
     override suspend fun login(homeserverUrl: String, username: String, password: String) {
@@ -100,25 +101,29 @@ class RustMatrixClient(
         timelineHandle = null
 
         // Sliding Sync delivers rooms asynchronously after startSync().
-        // Retry getRoom() with exponential backoff to handle the race
-        // between sync start and room availability.
+        // Poll getRoom() until available or timeout expires.
         val client = requireClient()
         var room = client.getRoom(roomId)
         if (room == null) {
-            val delays = longArrayOf(100, 200, 500, 1000, 2000)
-            for (attempt in delays.indices) {
-                Log.d(TAG, "Room not yet available, retrying in ${delays[attempt]}ms (attempt ${attempt + 1}/${delays.size})")
-                onSyncStatusCallback?.invoke("Waiting for room sync (${attempt + 1}/${delays.size})")
-                delay(delays[attempt])
+            val timeoutMs = ROOM_SYNC_TIMEOUT_MS
+            val pollMs = ROOM_SYNC_POLL_MS
+            val startMs = System.currentTimeMillis()
+            val deadlineMs = startMs + timeoutMs
+
+            while (room == null && System.currentTimeMillis() < deadlineMs) {
+                val elapsedMs = System.currentTimeMillis() - startMs
+                Log.d(TAG, "Room not yet available, polling in ${pollMs}ms (elapsed ${elapsedMs}ms/${timeoutMs}ms)")
+                onSyncStatusCallback?.invoke("Waiting for room sync (${elapsedMs / 1000}s/${timeoutMs / 1000}s)")
+                delay(pollMs)
                 room = client.getRoom(roomId)
-                if (room != null) {
-                    Log.d(TAG, "Room found after ${attempt + 1} retries")
-                    break
-                }
+            }
+
+            if (room != null) {
+                Log.d(TAG, "Room found after ${System.currentTimeMillis() - startMs}ms")
             }
         }
         if (room == null) {
-            throw IllegalArgumentException("Room not found after retries: $roomId")
+            throw IllegalArgumentException("Room not found after waiting for sync: $roomId")
         }
 
         val tl = room.timeline()
@@ -228,5 +233,7 @@ class RustMatrixClient(
 
     companion object {
         private const val TAG = "DeckChat.MatrixClient"
+        private const val ROOM_SYNC_TIMEOUT_MS = 30_000L
+        private const val ROOM_SYNC_POLL_MS = 250L
     }
 }
