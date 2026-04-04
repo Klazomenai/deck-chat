@@ -38,6 +38,7 @@ class SettingsActivity : AppCompatActivity() {
         updateSessionStatus(statusText)
 
         saveButton.setOnClickListener {
+            // Validate all inputs before saving any
             val url = homeserverInput.text.toString().trim()
             if (url.isEmpty()) {
                 homeserverInput.error = "Homeserver URL is required"
@@ -52,17 +53,17 @@ class SettingsActivity : AppCompatActivity() {
                 homeserverInput.error = "URL must include a hostname"
                 return@setOnClickListener
             }
-            storage.homeserverUrl = url
-
             val roomId = roomIdInput.text.toString().trim()
-            storage.roomId = roomId.ifEmpty { null }
-
             val timeoutSec = timeoutInput.text.toString().trim().toIntOrNull()
             if (timeoutSec == null || timeoutSec !in SecureStorage.MIN_RESPONSE_TIMEOUT_SEC..SecureStorage.MAX_RESPONSE_TIMEOUT_SEC) {
                 timeoutInput.error = getString(R.string.response_timeout_range_error)
                 return@setOnClickListener
             }
+
+            // All valid — persist
             timeoutInput.error = null
+            storage.homeserverUrl = url
+            storage.roomId = roomId.ifEmpty { null }
             storage.responseTimeoutSec = timeoutSec
 
             updateSessionStatus(statusText)
