@@ -33,6 +33,7 @@ class MainViewModel(
     private val roomId: String?,
     private val audioFileProvider: () -> File,
     private val defaultCrew: String = DEFAULT_CREW,
+    private val responseTimeoutMs: Long = DEFAULT_RESPONSE_TIMEOUT_MS,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
@@ -141,9 +142,9 @@ class MainViewModel(
 
                         _state.value = PipelineState.Processing("Waiting for crew")
                         response = try {
-                            withTimeout(RESPONSE_TIMEOUT_MS) { responseDeferred.await() }
+                            withTimeout(responseTimeoutMs) { responseDeferred.await() }
                         } catch (e: TimeoutCancellationException) {
-                            throw RuntimeException("timeout")
+                            throw PipelineTimeoutException(e)
                         }
                     } finally {
                         pendingResponse = null
@@ -169,11 +170,12 @@ class MainViewModel(
     // Stage strings are set and checked in this file only. Extract to a sealed type
     // when localising UI strings (M2) — see Copilot review on PR #89.
     private fun classifyError(e: Exception): PipelineError {
+        if (e is PipelineTimeoutException) return PipelineError.ResponseTimeout
         val state = _state.value
         return when {
             state is PipelineState.Processing && state.stage == "Transcribing" ->
                 PipelineError.SttFailed(e.message ?: "STT failed")
-            state is PipelineState.Processing && (state.stage == "Sending" || state.stage == "Waiting for crew") ->
+            state is PipelineState.Processing && (state.stage == "Sending" || state.stage.startsWith("Waiting for crew")) ->
                 PipelineError.MatrixFailed(e.message ?: "Matrix failed")
             state is PipelineState.Speaking ->
                 PipelineError.TtsFailed(e.message ?: "TTS failed")
@@ -243,12 +245,13 @@ class MainViewModel(
         private val roomId: String?,
         private val audioFileProvider: () -> File,
         private val defaultCrew: String = DEFAULT_CREW,
+        private val responseTimeoutMs: Long = DEFAULT_RESPONSE_TIMEOUT_MS,
         private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-                return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider, defaultCrew, ioDispatcher) as T
+                return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider, defaultCrew, responseTimeoutMs, ioDispatcher) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
@@ -256,7 +259,10 @@ class MainViewModel(
 
     companion object {
         private const val TAG = "DeckChat.ViewModel"
-        internal const val RESPONSE_TIMEOUT_MS = 30_000L
+        internal val DEFAULT_RESPONSE_TIMEOUT_MS = SecureStorage.DEFAULT_RESPONSE_TIMEOUT_SEC * 1000L
         internal const val DEFAULT_CREW = "maren"
     }
 }
+
+/** Sentinel exception for response timeout — classified as [PipelineError.ResponseTimeout]. */
+private class PipelineTimeoutException(cause: Throwable? = null) : RuntimeException("Response timeout", cause)

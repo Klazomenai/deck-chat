@@ -34,9 +34,11 @@ class MainActivity : AppCompatActivity() {
         val matrixClient: MatrixClient? = if (storage.hasSession()) RustMatrixClient(appContext, storage) else null
         val roomId = storage.roomId
         val voiceProfile = storage.voiceProfile ?: "maren"
+        val timeoutMs = storage.responseTimeoutSec.toLong() * 1000L
         MainViewModel.Factory(sttEngine, ttsEngine, matrixClient, roomId,
             audioFileProvider = { File(appContext.cacheDir, "recording.pcm") },
             defaultCrew = voiceProfile,
+            responseTimeoutMs = timeoutMs,
         )
     }
     private var currentIndicatorColor: Int = 0
@@ -303,6 +305,7 @@ class MainActivity : AppCompatActivity() {
         is PipelineError.SttFailed -> getString(R.string.error_stt_failed, error.message)
         is PipelineError.TtsFailed -> getString(R.string.error_tts_failed, error.message)
         is PipelineError.MatrixFailed -> getString(R.string.error_matrix_failed, error.message)
+        is PipelineError.ResponseTimeout -> getString(R.string.error_response_timeout)
     }
 
     private fun showPermanentDenialDialog() {

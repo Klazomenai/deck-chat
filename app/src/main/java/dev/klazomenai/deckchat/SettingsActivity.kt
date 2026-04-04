@@ -26,6 +26,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val homeserverInput = findViewById<EditText>(R.id.homeserver_url_input)
         val roomIdInput = findViewById<EditText>(R.id.room_id_input)
+        val timeoutInput = findViewById<EditText>(R.id.response_timeout_input)
         val statusText = findViewById<TextView>(R.id.session_status)
         val saveButton = findViewById<Button>(R.id.save_button)
         val clearButton = findViewById<Button>(R.id.clear_session_button)
@@ -33,9 +34,11 @@ class SettingsActivity : AppCompatActivity() {
         // Load saved values
         homeserverInput.setText(storage.homeserverUrl ?: "")
         roomIdInput.setText(storage.roomId ?: "")
+        timeoutInput.setText(storage.responseTimeoutSec.toString())
         updateSessionStatus(statusText)
 
         saveButton.setOnClickListener {
+            // Validate all inputs before saving any
             val url = homeserverInput.text.toString().trim()
             if (url.isEmpty()) {
                 homeserverInput.error = "Homeserver URL is required"
@@ -50,10 +53,18 @@ class SettingsActivity : AppCompatActivity() {
                 homeserverInput.error = "URL must include a hostname"
                 return@setOnClickListener
             }
-            storage.homeserverUrl = url
-
             val roomId = roomIdInput.text.toString().trim()
+            val timeoutSec = timeoutInput.text.toString().trim().toIntOrNull()
+            if (timeoutSec == null || timeoutSec !in SecureStorage.MIN_RESPONSE_TIMEOUT_SEC..SecureStorage.MAX_RESPONSE_TIMEOUT_SEC) {
+                timeoutInput.error = getString(R.string.response_timeout_range_error)
+                return@setOnClickListener
+            }
+
+            // All valid — persist
+            timeoutInput.error = null
+            storage.homeserverUrl = url
             storage.roomId = roomId.ifEmpty { null }
+            storage.responseTimeoutSec = timeoutSec
 
             updateSessionStatus(statusText)
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
