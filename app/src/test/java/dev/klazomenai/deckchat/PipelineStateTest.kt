@@ -54,6 +54,7 @@ class PipelineStateTest {
             PipelineError.SttFailed("stt error"),
             PipelineError.TtsFailed("tts error"),
             PipelineError.MatrixFailed("matrix error"),
+            PipelineError.ResponseTimeout,
         )
         // All unique
         assertEquals(errors.size, errors.toSet().size)

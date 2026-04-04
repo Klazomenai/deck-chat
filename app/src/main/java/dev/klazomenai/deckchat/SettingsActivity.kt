@@ -58,7 +58,7 @@ class SettingsActivity : AppCompatActivity() {
             storage.roomId = roomId.ifEmpty { null }
 
             val timeoutSec = timeoutInput.text.toString().trim().toIntOrNull()
-            if (timeoutSec == null || timeoutSec !in 5..300) {
+            if (timeoutSec == null || timeoutSec !in SecureStorage.MIN_RESPONSE_TIMEOUT_SEC..SecureStorage.MAX_RESPONSE_TIMEOUT_SEC) {
                 timeoutInput.error = getString(R.string.response_timeout_range_error)
                 return@setOnClickListener
             }

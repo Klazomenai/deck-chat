@@ -156,4 +156,34 @@ class SecureStorageTest {
         storage.clearSession()
         assertEquals("crest", storage.voiceProfile)
     }
+
+    @Test
+    fun `responseTimeoutSec returns default when not set`() {
+        val storage = createStorage()
+        assertEquals(SecureStorage.DEFAULT_RESPONSE_TIMEOUT_SEC, storage.responseTimeoutSec)
+    }
+
+    @Test
+    fun `responseTimeoutSec setter clamps below minimum`() {
+        val storage = createStorage()
+        storage.responseTimeoutSec = 0
+        assertEquals(SecureStorage.MIN_RESPONSE_TIMEOUT_SEC, storage.responseTimeoutSec)
+    }
+
+    @Test
+    fun `responseTimeoutSec setter clamps above maximum`() {
+        val storage = createStorage()
+        storage.responseTimeoutSec = 999
+        assertEquals(SecureStorage.MAX_RESPONSE_TIMEOUT_SEC, storage.responseTimeoutSec)
+    }
+
+    @Test
+    fun `responseTimeoutSec getter falls back on out-of-range stored value`() {
+        val storage = createStorage()
+        // Write an out-of-range value directly to prefs (simulates corruption)
+        val prefs = RuntimeEnvironment.getApplication()
+            .getSharedPreferences("test_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("response_timeout_sec", -1).commit()
+        assertEquals(SecureStorage.DEFAULT_RESPONSE_TIMEOUT_SEC, storage.responseTimeoutSec)
+    }
 }
