@@ -58,12 +58,12 @@ class SettingsActivity : AppCompatActivity() {
             storage.roomId = roomId.ifEmpty { null }
 
             val timeoutSec = timeoutInput.text.toString().trim().toIntOrNull()
-            if (timeoutSec != null && timeoutSec in 5..300) {
-                storage.responseTimeoutSec = timeoutSec
-            } else {
+            if (timeoutSec == null || timeoutSec !in 5..300) {
                 timeoutInput.error = getString(R.string.response_timeout_range_error)
                 return@setOnClickListener
             }
+            timeoutInput.error = null
+            storage.responseTimeoutSec = timeoutSec
 
             updateSessionStatus(statusText)
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
