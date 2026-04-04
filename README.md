@@ -137,7 +137,9 @@ logcat                       # filtered log output for DeckChat
 actionable messages. Set `ANDROID_SERIAL` to target a specific device when
 multiple are connected.
 
-When using `nix develop` (without devenv scripts), install directly via adb:
+When using `nix develop` (without devenv scripts), install directly via adb.
+The `--impure` flag may be needed if the Android SDK path requires impure
+evaluation on your system:
 
 ```bash
 nix develop --impure --command bash -c './gradlew assembleDebug'
@@ -153,7 +155,7 @@ nix develop --impure --command adb install -r app/build/outputs/apk/debug/app-de
 | `DeckChat.CRASH` | E | `DeckChatApplication` — global uncaught exception handler |
 | `DeckChat.Onboarding` | D/E | `OnboardingActivity` — login flow |
 | `DeckChat.ViewModel` | D/E | `MainViewModel` — Matrix sync init |
-| `DeckChat.MatrixClient` | D/E | `RustMatrixClient` — room sync, Sliding Sync retry |
+| `DeckChat.MatrixClient` | D | `RustMatrixClient` — room sync, Sliding Sync retry |
 | `DeckChat.SttEngine` | D/E | `SherpaOnnxSttEngine` — transcription pipeline |
 | `DeckChat.TtsEngine` | E | `SherpaOnnxTtsEngine` — native library load |
 | `DeckChat.SecureStorage` | E | `SecureStorage` — decryption failures |
