@@ -9,6 +9,7 @@
     <string name="save_button">Save</string>
     <string name="response_timeout_label">Response timeout (seconds)</string>
     <string name="response_timeout_hint">60</string>
+    <string name="response_timeout_range_error">Enter a value between 5 and 300 seconds</string>
     <string name="session_heading">Matrix Session</string>
     <string name="session_active">Logged in as %1$s</string>
     <string name="session_none">No active session</string>

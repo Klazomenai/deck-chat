@@ -141,21 +141,11 @@ class MainViewModel(
                         _state.value = PipelineState.Processing("Sending")
                         withContext(ioDispatcher) { matrixClient.sendMessage(roomId, text) }
 
-                        // Show elapsed time while waiting for crew response
-                        val waitingJob = launch {
-                            var elapsed = 0
-                            while (true) {
-                                _state.value = PipelineState.Processing("Waiting for crew (${elapsed}s)")
-                                delay(1000)
-                                elapsed++
-                            }
-                        }
+                        _state.value = PipelineState.Processing("Waiting for crew")
                         response = try {
                             withTimeout(responseTimeoutMs) { responseDeferred.await() }
                         } catch (e: TimeoutCancellationException) {
                             throw PipelineTimeoutException()
-                        } finally {
-                            waitingJob.cancel()
                         }
                     } finally {
                         pendingResponse = null

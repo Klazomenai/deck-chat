@@ -61,7 +61,7 @@ class SettingsActivity : AppCompatActivity() {
             if (timeoutSec != null && timeoutSec in 5..300) {
                 storage.responseTimeoutSec = timeoutSec
             } else {
-                timeoutInput.error = "Enter a value between 5 and 300 seconds"
+                timeoutInput.error = getString(R.string.response_timeout_range_error)
                 return@setOnClickListener
             }
 

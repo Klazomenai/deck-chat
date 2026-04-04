@@ -215,7 +215,7 @@ class VoicePipelineTest {
     // --- Timeout ---
 
     @Test
-    fun `online mode - response timeout transitions to MatrixFailed with timeout message`() = runTest {
+    fun `online mode - response timeout transitions to ResponseTimeout error`() = runTest {
         sttEngine.returnText = "anyone there"
         val viewModel = createViewModel(matrixClient = matrixClient, roomId = "!room:example.com")
         advanceUntilIdle()

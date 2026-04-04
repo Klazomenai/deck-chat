@@ -79,7 +79,8 @@ class SecureStorage(
     /** Response timeout in seconds. Default 60s — covers crew delegation chains. */
     var responseTimeoutSec: Int
         get() = prefs.getInt(KEY_RESPONSE_TIMEOUT_SEC, DEFAULT_RESPONSE_TIMEOUT_SEC)
-        set(value) = prefs.edit().putInt(KEY_RESPONSE_TIMEOUT_SEC, value).apply()
+            .takeIf { it in 5..300 } ?: DEFAULT_RESPONSE_TIMEOUT_SEC
+        set(value) = prefs.edit().putInt(KEY_RESPONSE_TIMEOUT_SEC, value.coerceIn(5, 300)).apply()
 
     // --- Sensitive tokens (encrypted via TokenEncryptor) ---
 
