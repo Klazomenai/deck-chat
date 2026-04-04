@@ -120,8 +120,8 @@ This fetches:
 
 Models are placed in `app/src/main/assets/stt/` and `app/src/main/assets/tts/`
 (both gitignored). All three STT files (`tiny.en-encoder.int8.onnx`,
-`tiny.en-decoder.int8.onnx`, `tiny.en-tokens.txt`) are required — a missing
-tokens file causes a silent native crash (SIGSEGV).
+`tiny.en-decoder.int8.onnx`, `tiny.en-tokens.txt`) are required — if any are
+missing, the app fails fast with an explicit Kotlin `require(...)` error.
 
 ### Physical device
 
@@ -163,7 +163,7 @@ nix develop --impure --command adb install -r app/build/outputs/apk/debug/app-de
 ```bash
 # Filter by DeckChat process (all tags)
 nix develop --impure --command bash -c \
-  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat)'
+  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d "\r")'
 
 # Filter by specific tags
 nix develop --impure --command bash -c \
@@ -171,16 +171,19 @@ nix develop --impure --command bash -c \
 
 # Pipe to file for analysis
 nix develop --impure --command bash -c \
-  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat) > /tmp/deckchat.log 2>&1'
+  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d "\r") > /tmp/deckchat.log 2>&1'
 ```
 
-> **Note:** The devenv `logcat` convenience script does not work with
-> `nix develop --command` — use `adb logcat` directly as shown above.
+> **Note:** The devenv `logcat` convenience script is only available in
+> `devenv shell`. With `nix develop --command`, devenv scripts are not
+> provided, so use `adb logcat` directly as shown above.
 
 **Debug vs release APK:**
 
-- **Debug**: no R8 minification, no signing, no model download needed for tests (mocks)
-- **Release**: R8 minification on, requires keystore + model download
+- **Debug**: no R8 minification, signed with the default debug key (not release-signed), no model download needed for mocked tests
+- **Release**: R8 minification on, requires a release keystore + model download
+- Running on a real device still requires STT/TTS models; only mocked unit tests
+  can run without downloading them.
 - Switching between debug and release (or uninstalling/reinstalling) creates a
   new E2EE session. The bridge must create new megolm keys — restart the bridge
   pod to force key re-sharing.
