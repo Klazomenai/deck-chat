@@ -28,4 +28,5 @@ sealed class PipelineError {
     data class SttFailed(val message: String) : PipelineError()
     data class TtsFailed(val message: String) : PipelineError()
     data class MatrixFailed(val message: String) : PipelineError()
+    data object ResponseTimeout : PipelineError()
 }

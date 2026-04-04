@@ -228,15 +228,14 @@ class VoicePipelineTest {
         // Should have sent to Matrix
         assertEquals(1, matrixClient.sentMessages.size)
 
-        // Advance past the 30s timeout without sending a response
-        testScheduler.advanceTimeBy(MainViewModel.RESPONSE_TIMEOUT_MS + 1_000)
+        // Advance past the 60s timeout without sending a response
+        testScheduler.advanceTimeBy(MainViewModel.DEFAULT_RESPONSE_TIMEOUT_MS + 1_000)
         testScheduler.runCurrent()
 
         val state = viewModel.state.value
         assertTrue(state is PipelineState.Error)
         val error = (state as PipelineState.Error).error
-        assertTrue(error is PipelineError.MatrixFailed)
-        assertEquals("timeout", (error as PipelineError.MatrixFailed).message)
+        assertTrue(error is PipelineError.ResponseTimeout)
         assertEquals(0, ttsEngine.calls.size)
     }
 

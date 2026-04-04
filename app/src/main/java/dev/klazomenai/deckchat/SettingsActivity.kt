@@ -26,6 +26,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val homeserverInput = findViewById<EditText>(R.id.homeserver_url_input)
         val roomIdInput = findViewById<EditText>(R.id.room_id_input)
+        val timeoutInput = findViewById<EditText>(R.id.response_timeout_input)
         val statusText = findViewById<TextView>(R.id.session_status)
         val saveButton = findViewById<Button>(R.id.save_button)
         val clearButton = findViewById<Button>(R.id.clear_session_button)
@@ -33,6 +34,7 @@ class SettingsActivity : AppCompatActivity() {
         // Load saved values
         homeserverInput.setText(storage.homeserverUrl ?: "")
         roomIdInput.setText(storage.roomId ?: "")
+        timeoutInput.setText(storage.responseTimeoutSec.toString())
         updateSessionStatus(statusText)
 
         saveButton.setOnClickListener {
@@ -54,6 +56,14 @@ class SettingsActivity : AppCompatActivity() {
 
             val roomId = roomIdInput.text.toString().trim()
             storage.roomId = roomId.ifEmpty { null }
+
+            val timeoutSec = timeoutInput.text.toString().trim().toIntOrNull()
+            if (timeoutSec != null && timeoutSec in 5..300) {
+                storage.responseTimeoutSec = timeoutSec
+            } else {
+                timeoutInput.error = "Enter a value between 5 and 300 seconds"
+                return@setOnClickListener
+            }
 
             updateSessionStatus(statusText)
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()

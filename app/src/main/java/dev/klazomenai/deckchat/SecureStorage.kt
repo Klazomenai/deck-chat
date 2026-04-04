@@ -76,6 +76,11 @@ class SecureStorage(
         get() = prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
         set(value) = prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETE, value).apply()
 
+    /** Response timeout in seconds. Default 60s — covers crew delegation chains. */
+    var responseTimeoutSec: Int
+        get() = prefs.getInt(KEY_RESPONSE_TIMEOUT_SEC, DEFAULT_RESPONSE_TIMEOUT_SEC)
+        set(value) = prefs.edit().putInt(KEY_RESPONSE_TIMEOUT_SEC, value).apply()
+
     // --- Sensitive tokens (encrypted via TokenEncryptor) ---
 
     var accessToken: String?
@@ -211,5 +216,7 @@ class SecureStorage(
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_SQLITE_PASSPHRASE = "sqlite_passphrase"
+        private const val KEY_RESPONSE_TIMEOUT_SEC = "response_timeout_sec"
+        const val DEFAULT_RESPONSE_TIMEOUT_SEC = 60
     }
 }
