@@ -1,9 +1,11 @@
 package dev.klazomenai.deckchat
 
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.matrix.rustcomponents.sdk.Client
@@ -41,6 +43,7 @@ class RustMatrixClient(
     private var timelineHandle: TaskHandle? = null
     private var timeline: Timeline? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var onSyncStatusCallback: ((String) -> Unit)? = null
 
     override suspend fun login(homeserverUrl: String, username: String, password: String) {
         val client = buildClient(homeserverUrl)
@@ -96,8 +99,28 @@ class RustMatrixClient(
         timelineHandle?.close()
         timelineHandle = null
 
-        val room = requireClient().getRoom(roomId)
-            ?: throw IllegalArgumentException("Room not found: $roomId")
+        // Sliding Sync delivers rooms asynchronously after startSync().
+        // Retry getRoom() with exponential backoff to handle the race
+        // between sync start and room availability.
+        val client = requireClient()
+        var room = client.getRoom(roomId)
+        if (room == null) {
+            val delays = longArrayOf(100, 200, 500, 1000, 2000)
+            for (attempt in delays.indices) {
+                Log.d(TAG, "Room not yet available, retrying in ${delays[attempt]}ms (attempt ${attempt + 1}/${delays.size})")
+                onSyncStatusCallback?.invoke("Waiting for room sync (${attempt + 1}/${delays.size})")
+                delay(delays[attempt])
+                room = client.getRoom(roomId)
+                if (room != null) {
+                    Log.d(TAG, "Room found after ${attempt + 1} retries")
+                    break
+                }
+            }
+        }
+        if (room == null) {
+            throw IllegalArgumentException("Room not found after retries: $roomId")
+        }
+
         val tl = room.timeline()
         timeline = tl
 
@@ -126,6 +149,10 @@ class RustMatrixClient(
     }
 
     override fun isLoggedIn(): Boolean = client != null && storage.hasSession()
+
+    override fun setSyncStatusCallback(callback: ((String) -> Unit)?) {
+        onSyncStatusCallback = callback
+    }
 
     // --- Internal ---
 
@@ -197,5 +224,9 @@ class RustMatrixClient(
         val body = msgType.content.body
         val crewMessage = parseCrewMessage(body, event.sender) ?: return
         onMessageCallback?.invoke(crewMessage)
+    }
+
+    companion object {
+        private const val TAG = "DeckChat.MatrixClient"
     }
 }

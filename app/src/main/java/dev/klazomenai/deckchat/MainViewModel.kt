@@ -75,6 +75,15 @@ class MainViewModel(
         matrixClient ?: return
         val room = roomId ?: return
 
+        _state.value = PipelineState.Processing("Connecting")
+
+        // Surface sync status to UI so the user sees retry progress
+        matrixClient.setSyncStatusCallback { status ->
+            viewModelScope.launch {
+                _state.value = PipelineState.Processing(status)
+            }
+        }
+
         viewModelScope.launch {
             try {
                 withContext(ioDispatcher) {
@@ -92,6 +101,7 @@ class MainViewModel(
                     matrixClient.listenToRoom(room)
                     Log.d(TAG, "Timeline listener attached")
                 }
+                _state.value = PipelineState.Idle
             } catch (e: Exception) {
                 Log.e(TAG, "Matrix sync init failed: ${e.javaClass.name}", e)
                 try {

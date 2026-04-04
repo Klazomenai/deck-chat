@@ -17,6 +17,8 @@ interface MatrixClient {
     suspend fun sendMessage(roomId: String, text: String)
     fun startSync(onMessage: (CrewMessage) -> Unit)
     suspend fun listenToRoom(roomId: String)
+    /** Register a callback for sync status updates (e.g. "Waiting for room sync"). */
+    fun setSyncStatusCallback(callback: ((String) -> Unit)?)
     /** Stops syncing. Does NOT clear the session or log out. */
     suspend fun stop()
     fun isLoggedIn(): Boolean
