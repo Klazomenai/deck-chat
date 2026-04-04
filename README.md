@@ -181,7 +181,7 @@ nix develop --impure --command bash -c \
 **Debug vs release APK:**
 
 - **Debug**: no R8 minification, signed with the default debug key (not release-signed), no model download needed for mocked tests
-- **Release**: R8 minification on, requires a release keystore + model download
+- **Release**: R8 minification on, requires a release keystore
 - Running on a real device still requires STT/TTS models; only mocked unit tests
   can run without downloading them.
 - Switching between debug and release (or uninstalling/reinstalling) creates a
