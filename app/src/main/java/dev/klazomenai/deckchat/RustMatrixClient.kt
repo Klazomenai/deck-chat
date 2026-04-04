@@ -123,7 +123,6 @@ class RustMatrixClient(
 
             if (room != null) {
                 Log.d(TAG, "Room found after ${SystemClock.elapsedRealtime() - startMs}ms")
-                onSyncStatusCallback?.invoke("")
             }
         }
         if (room == null) {
