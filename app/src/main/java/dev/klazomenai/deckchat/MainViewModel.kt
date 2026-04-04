@@ -144,7 +144,7 @@ class MainViewModel(
                         response = try {
                             withTimeout(responseTimeoutMs) { responseDeferred.await() }
                         } catch (e: TimeoutCancellationException) {
-                            throw PipelineTimeoutException()
+                            throw PipelineTimeoutException(e)
                         }
                     } finally {
                         pendingResponse = null
@@ -265,4 +265,4 @@ class MainViewModel(
 }
 
 /** Sentinel exception for response timeout — classified as [PipelineError.ResponseTimeout]. */
-private class PipelineTimeoutException : RuntimeException("Response timeout")
+private class PipelineTimeoutException(cause: Throwable? = null) : RuntimeException("Response timeout", cause)
