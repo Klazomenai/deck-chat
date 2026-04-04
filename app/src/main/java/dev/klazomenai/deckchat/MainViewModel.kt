@@ -259,7 +259,7 @@ class MainViewModel(
 
     companion object {
         private const val TAG = "DeckChat.ViewModel"
-        internal const val DEFAULT_RESPONSE_TIMEOUT_MS = 60_000L
+        internal val DEFAULT_RESPONSE_TIMEOUT_MS = SecureStorage.DEFAULT_RESPONSE_TIMEOUT_SEC * 1000L
         internal const val DEFAULT_CREW = "maren"
     }
 }
