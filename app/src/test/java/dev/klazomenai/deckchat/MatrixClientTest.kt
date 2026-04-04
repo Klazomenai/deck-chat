@@ -48,6 +48,10 @@ class MockMatrixClient(
         listenedRoomId = roomId
     }
 
+    override fun setSyncStatusCallback(callback: ((String) -> Unit)?) {
+        // no-op in mock
+    }
+
     override suspend fun stop() {
         stopCount++
     }
