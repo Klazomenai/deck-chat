@@ -75,7 +75,7 @@ versionCode than any prerelease of the same version.
 Prerelease versions must use a lowercase alphabetic label in the form `-label` or
 `-label.N`; only the trailing number affects `versionCode`, and a bare label is treated
 as prerelease 0. The build fails if any slot exceeds its range
-(minor/patch/prerelease must be 0–99).
+(minor/patch must be 0–99; prerelease must be 0–98, since 99 is reserved for stable).
 
 No per-release commits are needed — release-please bumps `versionName` via the
 `x-release-please-version` marker, and `versionCode` follows automatically.

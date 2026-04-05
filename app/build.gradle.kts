@@ -19,7 +19,8 @@ plugins {
  * only the optional trailing number affects the prerelease slot.
  *
  * Stable releases use pre=99 so they always beat prereleases of the same version.
- * Supports up to 99 prereleases per patch, 99 patches per minor, 99 minors per major.
+ * Supports up to 98 prereleases per patch (99 reserved for stable), 99 patches per minor,
+ * 99 minors per major.
  * Build fails if any slot exceeds its range.
  */
 fun computeVersionCode(version: String): Int {
@@ -35,7 +36,7 @@ fun computeVersionCode(version: String): Int {
     }
     require(minor in 0L..99L) { "minor $minor exceeds 0..99 in '$version'" }
     require(patch in 0L..99L) { "patch $patch exceeds 0..99 in '$version'" }
-    require(pre in 0L..99L) { "prerelease $pre exceeds 0..99 in '$version'" }
+    require(pre in 0L..98L) { "prerelease $pre exceeds 0..98 in '$version' (99 is reserved for stable)" }
     val code = major * 1_000_000L + minor * 10_000L + patch * 100L + pre
     require(code <= Int.MAX_VALUE.toLong()) { "versionCode $code exceeds Int.MAX_VALUE for '$version'" }
     return code.toInt()
