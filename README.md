@@ -115,11 +115,13 @@ scripts/download-stt-models.sh && scripts/download-tts-models.sh  # nix develop
 ```
 
 This fetches:
-- **STT**: Whisper Tiny EN int8 ONNX (~37 MB) from HuggingFace
+- **STT**: Whisper Tiny EN int8 ONNX (~37 MB) from HuggingFace — encoder, decoder, and tokens file
 - **TTS**: Piper VITS voices (~80 MB each) from k2-fsa/sherpa-onnx releases
 
 Models are placed in `app/src/main/assets/stt/` and `app/src/main/assets/tts/`
-(both gitignored).
+(both gitignored). All three STT files (`tiny.en-encoder.int8.onnx`,
+`tiny.en-decoder.int8.onnx`, `tiny.en-tokens.txt`) are required — if any are
+missing, the app fails fast with an explicit Kotlin `require(...)` error.
 
 ### Physical device
 
@@ -134,6 +136,69 @@ logcat                       # filtered log output for DeckChat
 `logcat` detects no-device, unauthorized, and multi-device states with
 actionable messages. Set `ANDROID_SERIAL` to target a specific device when
 multiple are connected.
+
+When using `nix develop` (without devenv scripts), install directly via adb.
+The `--impure` flag may be needed if the Android SDK path requires impure
+evaluation on your system:
+
+```bash
+nix develop --impure --command bash -c './gradlew assembleDebug'
+nix develop --impure --command adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+### Debugging
+
+**Logcat tags:**
+
+| Tag | Level | Source |
+|-----|-------|--------|
+| `DeckChat.CRASH` | E | `DeckChatApplication` — global uncaught exception handler |
+| `DeckChat.Onboarding` | D/E | `OnboardingActivity` — login flow |
+| `DeckChat.ViewModel` | D/E | `MainViewModel` — Matrix sync init |
+| `DeckChat.MatrixClient` | D | `RustMatrixClient` — room sync, Sliding Sync retry |
+| `DeckChat.SttEngine` | D/E | `SherpaOnnxSttEngine` — transcription pipeline |
+| `DeckChat.TtsEngine` | E | `SherpaOnnxTtsEngine` — native library load |
+| `DeckChat.SecureStorage` | E | `SecureStorage` — decryption failures |
+
+**Logcat commands:**
+
+```bash
+# Filter by DeckChat process (all tags)
+nix develop --impure --command bash -c \
+  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d \\r)'
+
+# Filter by specific tags
+nix develop --impure --command bash -c \
+  'adb logcat -s "DeckChat.SttEngine:D" "DeckChat.CRASH:E" "AndroidRuntime:E"'
+
+# Pipe to file for analysis
+nix develop --impure --command bash -c \
+  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d \\r) > /tmp/deckchat.log 2>&1'
+```
+
+> **Note:** The devenv `logcat` convenience script is only available in
+> `devenv shell`. With `nix develop --command`, devenv scripts are not
+> provided, so use `adb logcat` directly as shown above.
+
+**Debug vs release APK:**
+
+- **Debug**: no R8 minification, signed with the default debug key (not release-signed), no model download needed for mocked tests
+- **Release**: R8 minification on, requires a release keystore
+- Running on a real device still requires STT/TTS models; only mocked unit tests
+  can run without downloading them.
+- Switching between debug and release (or uninstalling/reinstalling) creates a
+  new E2EE session. The bridge must create new megolm keys — restart the bridge
+  pod to force key re-sharing.
+
+**Bridge context recovery:**
+
+If the bridge returns HTTP 400 with `"unexpected tool_use_id"`, the conversation
+context buffer is poisoned (an orphaned `tool_result` without its `tool_use`).
+All subsequent messages will fail until the pod is restarted:
+
+```bash
+kubectl delete pod -l app.kubernetes.io/name=bridge -n matrix
+```
 
 ### Other commands
 
