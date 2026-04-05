@@ -8,32 +8,31 @@ plugins {
  * Derives a monotonically increasing versionCode from a semver versionName.
  *
  * Formula: major * 1_000_000 + minor * 10_000 + patch * 100 + prerelease
- *   "0.1.0-alpha"   -> 10000  (bare "alpha" treated as 0)
+ *   "0.1.0-alpha"   -> 10000  (bare label, first prerelease after bump)
  *   "0.1.0-alpha.6" -> 10006
  *   "0.1.0"         -> 10099  (stable = 99, highest in patch range)
- *   "0.2.0"         -> 20099
+ *   "0.3.0-beta.2"  -> 30002
  *   "1.0.0"         -> 1000099
  *
  * Stable releases use pre=99 so they always beat prereleases of the same version.
  * Supports up to 99 prereleases per patch, 99 patches per minor, 99 minors per major.
- *
- * Limitations:
- * - Only matches "alpha" prerelease label (release-please prerelease-type config)
- * - Prerelease numbers above 99 overflow into the patch slot
- * - release-please bare "alpha" (no .N suffix) maps to pre=0
+ * Matches any prerelease label (alpha, beta, rc, etc.) — only the trailing number matters.
+ * Build fails if any slot exceeds its range.
  */
 fun computeVersionCode(version: String): Int {
-    val base = version.substringBefore("-")
-    val parts = base.split(".").map { it.toInt() }
-    val major = parts.getOrElse(0) { 0 }
-    val minor = parts.getOrElse(1) { 0 }
-    val patch = parts.getOrElse(2) { 0 }
-    val preMatch = Regex("""alpha\.(\d+)""").find(version)?.groupValues?.get(1)?.toInt()
+    val match = Regex("""^(\d+)\.(\d+)\.(\d+)(?:-[a-z]+(?:\.(\d+))?)?$""").matchEntire(version)
+        ?: throw GradleException("Unsupported version format '$version'")
+    val major = match.groupValues[1].toInt()
+    val minor = match.groupValues[2].toInt()
+    val patch = match.groupValues[3].toInt()
     val pre = when {
-        !version.contains("-") -> 99   // stable beats all prereleases
-        preMatch != null -> preMatch    // alpha.N
-        else -> 0                       // bare "alpha" (first prerelease)
+        !version.contains("-") -> 99                              // stable
+        match.groupValues[4].isNotEmpty() -> match.groupValues[4].toInt() // label.N
+        else -> 0                                                 // bare label
     }
+    require(minor in 0..99) { "minor $minor exceeds 0..99 in '$version'" }
+    require(patch in 0..99) { "patch $patch exceeds 0..99 in '$version'" }
+    require(pre in 0..99) { "prerelease $pre exceeds 0..99 in '$version'" }
     return major * 1_000_000 + minor * 10_000 + patch * 100 + pre
 }
 

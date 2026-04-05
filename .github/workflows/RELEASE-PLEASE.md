@@ -65,17 +65,18 @@ versionCode than any prerelease of the same version.
 
 | versionName | versionCode | Notes |
 |-------------|-------------|-------|
-| `0.1.0-alpha` | `10000` | Bare alpha (first prerelease after bump) |
+| `0.1.0-alpha` | `10000` | Bare label (first prerelease after bump) |
 | `0.1.0-alpha.6` | `10006` | |
-| `0.1.0` | `10099` | Stable beats all 0.1.0 alphas |
-| `0.2.0-alpha.1` | `20001` | |
-| `0.2.0` | `20099` | |
+| `0.1.0` | `10099` | Stable beats all 0.1.0 prereleases |
+| `0.3.0-beta.1` | `30001` | Any label works (alpha, beta, rc, ...) |
+| `0.3.0` | `30099` | |
 | `1.0.0` | `1000099` | |
+
+Any prerelease label is supported — only the trailing number matters. The build fails
+if any slot exceeds its range (minor/patch/prerelease must be 0–99).
 
 No per-release commits are needed — release-please bumps `versionName` via the
 `x-release-please-version` marker, and `versionCode` follows automatically.
-
-**Limits**: 99 prereleases per patch, 99 patches per minor, 99 minors per major.
 
 ## Configuration Files
 
