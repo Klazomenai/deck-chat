@@ -54,10 +54,10 @@ jobs:
           echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
 
       - name: Download STT models
-        run: nix develop --command bash scripts/download-stt-models.sh
+        run: devenv shell --command bash -- -c 'scripts/download-stt-models.sh'
 
       - name: Download TTS models
-        run: nix develop --command bash scripts/download-tts-models.sh
+        run: devenv shell --command bash -- -c 'scripts/download-tts-models.sh'
 
       - name: Build release APK
         env:
@@ -65,7 +65,7 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: nix develop --command ./gradlew assembleRelease
+        run: devenv shell --command bash -- -c './gradlew assembleRelease'
 
       - name: Rename APK
         run: |

@@ -48,7 +48,7 @@
               echo "DeckChat Android build environment"
               echo "ANDROID_HOME: $ANDROID_HOME"
               echo ""
-              echo "Run: nix develop --command ./gradlew lint test assembleDebug"
+              echo "Run: devenv shell"
             '';
           };
         }

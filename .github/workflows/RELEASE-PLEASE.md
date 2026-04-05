@@ -17,7 +17,8 @@ browser downloads the file directly and prompts for installation.
 2. release-please maintains an open PR that accumulates unreleased changes and updates
    the changelog
 3. Merging the release PR creates a GitHub Release with a semver tag
-4. The `build-apk` workflow job builds a signed release APK with STT/TTS models included
+4. The `build-apk` workflow job builds a signed release APK via `devenv shell` with STT/TTS
+   models included
 5. The APK is attached to the release as `deck-chat-<version>.apk`
 
 The release PR acts as a gate — changes accumulate until the team decides to cut a release
@@ -90,6 +91,10 @@ No per-release commits are needed — release-please bumps `versionName` via the
 
 The `extra-files` config uses a generic updater to patch `versionName` in
 `app/build.gradle.kts` via the `// x-release-please-version` marker comment.
+
+Both CI and release workflows use `devenv shell` for builds, matching the local
+development workflow. CI also runs `assembleRelease` (without signing) to catch
+R8 minification errors before merge.
 
 ## Changelog Sections
 
