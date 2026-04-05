@@ -25,18 +25,20 @@ plugins {
 fun computeVersionCode(version: String): Int {
     val match = Regex("""^(\d+)\.(\d+)\.(\d+)(?:-[a-z]+(?:\.(\d+))?)?$""").matchEntire(version)
         ?: throw GradleException("Unsupported version format '$version'")
-    val major = match.groupValues[1].toInt()
-    val minor = match.groupValues[2].toInt()
-    val patch = match.groupValues[3].toInt()
+    val major = match.groupValues[1].toLong()
+    val minor = match.groupValues[2].toLong()
+    val patch = match.groupValues[3].toLong()
     val pre = when {
-        !version.contains("-") -> 99                              // stable
-        match.groupValues[4].isNotEmpty() -> match.groupValues[4].toInt() // label.N
-        else -> 0                                                 // bare label
+        !version.contains("-") -> 99L                              // stable
+        match.groupValues[4].isNotEmpty() -> match.groupValues[4].toLong() // label.N
+        else -> 0L                                                 // bare label
     }
-    require(minor in 0..99) { "minor $minor exceeds 0..99 in '$version'" }
-    require(patch in 0..99) { "patch $patch exceeds 0..99 in '$version'" }
-    require(pre in 0..99) { "prerelease $pre exceeds 0..99 in '$version'" }
-    return major * 1_000_000 + minor * 10_000 + patch * 100 + pre
+    require(minor in 0L..99L) { "minor $minor exceeds 0..99 in '$version'" }
+    require(patch in 0L..99L) { "patch $patch exceeds 0..99 in '$version'" }
+    require(pre in 0L..99L) { "prerelease $pre exceeds 0..99 in '$version'" }
+    val code = major * 1_000_000L + minor * 10_000L + patch * 100L + pre
+    require(code <= Int.MAX_VALUE.toLong()) { "versionCode $code exceeds Int.MAX_VALUE for '$version'" }
+    return code.toInt()
 }
 
 android {
