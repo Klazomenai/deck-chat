@@ -30,22 +30,13 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: devenv shell bash -- -e {0}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: cachix/install-nix-action@v31
+      - uses: DeterminateSystems/nix-installer-action@v14
 
-      - uses: cachix/cachix-action@v16
-        with:
-          name: devenv
-
-      - name: Install devenv
-        shell: bash
-        run: nix profile install nixpkgs#devenv
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -57,17 +48,16 @@ jobs:
           restore-keys: gradle-${{ runner.os }}-
 
       - name: Decode keystore
-        shell: bash
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
           echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
 
       - name: Download STT models
-        run: scripts/download-stt-models.sh
+        run: nix develop --command bash scripts/download-stt-models.sh
 
       - name: Download TTS models
-        run: scripts/download-tts-models.sh
+        run: nix develop --command bash scripts/download-tts-models.sh
 
       - name: Build release APK
         env:
@@ -75,16 +65,14 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: nix develop --command ./gradlew assembleRelease
 
       - name: Rename APK
-        shell: bash
         run: |
           mv app/build/outputs/apk/release/app-release.apk \
              app/build/outputs/apk/release/deck-chat-${{ needs.release-please.outputs.version }}.apk
 
       - name: Attach APK to GitHub Release
-        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -93,7 +81,6 @@ jobs:
             --clobber
 
       - name: Summary
-        shell: bash
         run: |
           echo "## Signed APK Published" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"

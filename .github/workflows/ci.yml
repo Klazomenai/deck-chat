@@ -7,21 +7,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: devenv shell bash -- -e {0}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: cachix/install-nix-action@v31
+      - uses: DeterminateSystems/nix-installer-action@v14
 
-      - uses: cachix/cachix-action@v16
-        with:
-          name: devenv
-
-      - name: Install devenv
-        shell: bash
-        run: nix profile install nixpkgs#devenv
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -33,30 +24,26 @@ jobs:
           restore-keys: gradle-${{ runner.os }}-
 
       - name: Lint
-        run: ./gradlew lint
+        run: nix develop --command ./gradlew lint
 
       - name: Unit tests
-        run: ./gradlew test
+        run: nix develop --command ./gradlew test
 
       - name: Assemble debug APK
-        run: ./gradlew assembleDebug
+        run: nix develop --command ./gradlew assembleDebug
 
       - name: Assemble release APK (R8 validation)
-        run: ./gradlew assembleRelease
+        run: nix develop --command ./gradlew assembleRelease
 
   instrumented-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: cachix/install-nix-action@v31
-
-      - uses: cachix/cachix-action@v16
+      - uses: actions/setup-java@v4
         with:
-          name: devenv
-
-      - name: Install devenv
-        run: nix profile install nixpkgs#devenv
+          distribution: temurin
+          java-version: 17
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -84,7 +71,7 @@ jobs:
             adb shell settings put global window_animation_scale 0.0
             adb shell settings put global transition_animation_scale 0.0
             adb shell settings put global animator_duration_scale 0.0
-            devenv shell bash -- -e -c './gradlew connectedDebugAndroidTest'
+            ./gradlew connectedDebugAndroidTest
         timeout-minutes: 15
 
       - name: Upload test results
