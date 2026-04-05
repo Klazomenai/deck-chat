@@ -165,7 +165,7 @@ nix develop --impure --command adb install -r app/build/outputs/apk/debug/app-de
 ```bash
 # Filter by DeckChat process (all tags)
 nix develop --impure --command bash -c \
-  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d "\r")'
+  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d \\r)'
 
 # Filter by specific tags
 nix develop --impure --command bash -c \
@@ -173,7 +173,7 @@ nix develop --impure --command bash -c \
 
 # Pipe to file for analysis
 nix develop --impure --command bash -c \
-  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d "\r") > /tmp/deckchat.log 2>&1'
+  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d \\r) > /tmp/deckchat.log 2>&1'
 ```
 
 > **Note:** The devenv `logcat` convenience script is only available in
