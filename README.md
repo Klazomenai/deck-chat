@@ -52,24 +52,17 @@ flowchart TD
 ### Prerequisites
 
 - [Nix](https://nixos.org/download/) with flakes enabled
-- [devenv](https://devenv.sh/) (recommended — provides convenience scripts below)
+- [devenv](https://devenv.sh/)
 
 ### Dev shell
 
 ```bash
-devenv shell        # recommended — includes convenience scripts
-nix develop         # alternative — Gradle + SDK only, no convenience scripts
+devenv shell
 ```
 
-`devenv shell` provides JDK 17, Gradle, Android SDK (build-tools 36, platforms 35 and 36),
-`adb`, emulator, and convenience scripts. On entry it prints all available commands.
-`nix develop` provides the same toolchain but without the devenv scripts —
-use `./gradlew` and `adb` commands directly.
-
-> **Note:** Commands like `install-debug`, `device-test`, `logcat`, `devices`,
-> and `download-models` are devenv convenience scripts. `nix develop` users
-> can use the underlying `./gradlew` and `adb` equivalents shown in their
-> descriptions.
+This is the canonical entry point for all development. It provides JDK 17,
+Gradle, Android SDK (build-tools 36, platforms 35 and 36), `adb`, emulator,
+and convenience scripts. On entry it prints all available commands.
 
 ### Emulator
 
@@ -78,11 +71,8 @@ KVM for hardware acceleration (the emulator can run without it but will be slowe
 
 ```bash
 sudo usermod -aG kvm $USER    # one-time setup on Linux (requires logout/login)
-emulator                       # devenv shell — creates AVD on first run, then launches
+emulator                       # creates AVD on first run, then launches
 ```
-
-The `emulator` command is a devenv convenience script. `nix develop` users can
-create and launch the AVD manually with `avdmanager` and `$ANDROID_HOME/emulator/emulator`.
 
 SettingsActivity, HeadsetButtonReceiver, and permission-denial tests run on emulator.
 Bluetooth and microphone-dependent tests skip (no mic/BT hardware).
@@ -110,8 +100,7 @@ STT and TTS models are not committed to the repo (~200 MB total). Download
 them before building for real device use:
 
 ```bash
-download-models                                          # devenv shell
-scripts/download-stt-models.sh && scripts/download-tts-models.sh  # nix develop
+download-models
 ```
 
 This fetches:
@@ -137,15 +126,6 @@ logcat                       # filtered log output for DeckChat
 actionable messages. Set `ANDROID_SERIAL` to target a specific device when
 multiple are connected.
 
-When using `nix develop` (without devenv scripts), install directly via adb.
-The `--impure` flag may be needed if the Android SDK path requires impure
-evaluation on your system:
-
-```bash
-nix develop --impure --command bash -c './gradlew assembleDebug'
-nix develop --impure --command adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
 ### Debugging
 
 **Logcat tags:**
@@ -163,22 +143,13 @@ nix develop --impure --command adb install -r app/build/outputs/apk/debug/app-de
 **Logcat commands:**
 
 ```bash
-# Filter by DeckChat process (all tags)
-nix develop --impure --command bash -c \
-  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d \\r)'
-
-# Filter by specific tags
-nix develop --impure --command bash -c \
-  'adb logcat -s "DeckChat.SttEngine:D" "DeckChat.CRASH:E" "AndroidRuntime:E"'
-
-# Pipe to file for analysis
-nix develop --impure --command bash -c \
-  'adb logcat --pid=$(adb shell pidof -s dev.klazomenai.deckchat | tr -d \\r) > /tmp/deckchat.log 2>&1'
+logcat                          # all tags, filtered to DeckChat PID
+logcat -s "DeckChat.SttEngine:D" "DeckChat.CRASH:E" "AndroidRuntime:E"  # specific tags
+logcat > /tmp/deckchat.log 2>&1 # pipe to file for analysis
 ```
 
-> **Note:** The devenv `logcat` convenience script is only available in
-> `devenv shell`. With `nix develop --command`, devenv scripts are not
-> provided, so use `adb logcat` directly as shown above.
+`logcat` accepts all `adb logcat` flags — it passes arguments through after
+filtering to the DeckChat process.
 
 **Debug vs release APK:**
 
