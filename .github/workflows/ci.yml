@@ -32,6 +32,9 @@ jobs:
       - name: Assemble debug APK
         run: nix develop --command ./gradlew assembleDebug
 
+      - name: Assemble release APK (R8 validation)
+        run: nix develop --command ./gradlew assembleRelease
+
   instrumented-tests:
     runs-on: ubuntu-latest
     steps:

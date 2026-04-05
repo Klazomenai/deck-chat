@@ -20,15 +20,15 @@
               android_sdk.accept_license = true;  # explicit androidenv license acceptance
             };
           };
+          # CI-only: no emulator or system images (saves ~4 GB).
+          # Local development uses devenv shell which includes emulator.
           androidComposition = pkgs.androidenv.composeAndroidPackages {
             buildToolsVersions = [ "36.0.0" ];
             platformVersions = [ "35" "36" ];
             includeNDK = false;
-            includeEmulator = true;
+            includeEmulator = false;
             includeSources = false;
-            includeSystemImages = true;
-            systemImageTypes = [ "google_apis" ];
-            abiVersions = [ "x86_64" ];
+            includeSystemImages = false;
           };
         in
         {

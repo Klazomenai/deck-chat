@@ -91,6 +91,20 @@ No per-release commits are needed — release-please bumps `versionName` via the
 The `extra-files` config uses a generic updater to patch `versionName` in
 `app/build.gradle.kts` via the `// x-release-please-version` marker comment.
 
+### CI vs local toolchain
+
+Local development uses `devenv shell`, which provides the full environment including
+emulator and convenience scripts. CI workflows use `nix develop` (via `flake.nix`)
+instead, because `devenv.nix` includes Android emulator system images (~4 GB) that
+exceed the GitHub Actions runner disk budget when combined with the Nix store.
+
+`flake.nix` provides the same SDK and build toolchain without emulator packages.
+The `instrumented-tests` CI job uses `actions/setup-java` and
+`reactivecircus/android-emulator-runner` for emulator lifecycle, independent of Nix.
+
+CI also runs `assembleRelease` (without signing) to catch R8 minification errors
+before merge.
+
 ## Changelog Sections
 
 Conventional commit types map to changelog sections:
