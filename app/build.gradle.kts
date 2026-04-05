@@ -14,9 +14,12 @@ plugins {
  *   "0.3.0-beta.2"  -> 30002
  *   "1.0.0"         -> 1000099
  *
+ * Accepted formats: `major.minor.patch`, `major.minor.patch-label`, and
+ * `major.minor.patch-label.N`, where label is lowercase letters ([a-z]+) and
+ * only the optional trailing number affects the prerelease slot.
+ *
  * Stable releases use pre=99 so they always beat prereleases of the same version.
  * Supports up to 99 prereleases per patch, 99 patches per minor, 99 minors per major.
- * Matches any prerelease label (alpha, beta, rc, etc.) — only the trailing number matters.
  * Build fails if any slot exceeds its range.
  */
 fun computeVersionCode(version: String): Int {

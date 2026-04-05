@@ -30,9 +30,9 @@ reflect the maturity of each milestone.
 
 | Milestone | prerelease-type | Example Versions | Promotion |
 |-----------|----------------|------------------|-----------|
-| M1: First Watch | `alpha` | `0.1.0-alpha.0`, `0.1.0-alpha.1` | → `0.1.0` |
-| M2: Full Complement | `alpha` | `0.2.0-alpha.0`, `0.2.0-alpha.1` | → `0.2.0` |
-| M3: Open Ocean | `beta` | `0.3.0-beta.0`, `0.3.0-beta.1` | → `0.3.0` |
+| M1: First Watch | `alpha` | `0.1.0-alpha`, `0.1.0-alpha.1` | → `0.1.0` |
+| M2: Full Complement | `alpha` | `0.2.0-alpha`, `0.2.0-alpha.1` | → `0.2.0` |
+| M3: Open Ocean | `beta` | `0.3.0-beta`, `0.3.0-beta.1` | → `0.3.0` |
 | Future | _(stable)_ | `0.4.0`, `1.0.0` | — |
 
 ### Reasoning
@@ -72,8 +72,10 @@ versionCode than any prerelease of the same version.
 | `0.3.0` | `30099` | |
 | `1.0.0` | `1000099` | |
 
-Any prerelease label is supported — only the trailing number matters. The build fails
-if any slot exceeds its range (minor/patch/prerelease must be 0–99).
+Prerelease versions must use a lowercase alphabetic label in the form `-label` or
+`-label.N`; only the trailing number affects `versionCode`, and a bare label is treated
+as prerelease 0. The build fails if any slot exceeds its range
+(minor/patch/prerelease must be 0–99).
 
 No per-release commits are needed — release-please bumps `versionName` via the
 `x-release-please-version` marker, and `versionCode` follows automatically.
