@@ -50,6 +50,33 @@ Each transition is a one-line change in `release-please-config.json`:
 - **Beta → Stable**: Set `"prerelease": false` and remove `"prerelease-type"` and
   `"versioning-strategy"` fields
 
+## Version Code
+
+Android requires a monotonically increasing integer `versionCode` for each release.
+DeckChat computes `versionCode` from `versionName` at build time in `app/build.gradle.kts`
+using a deterministic formula:
+
+```
+versionCode = major * 1_000_000 + minor * 10_000 + patch * 100 + prerelease
+```
+
+Stable releases use `prerelease = 99` (the maximum), ensuring they always have a higher
+versionCode than any prerelease of the same version.
+
+| versionName | versionCode | Notes |
+|-------------|-------------|-------|
+| `0.1.0-alpha` | `10000` | Bare alpha (first prerelease after bump) |
+| `0.1.0-alpha.6` | `10006` | |
+| `0.1.0` | `10099` | Stable beats all 0.1.0 alphas |
+| `0.2.0-alpha.1` | `20001` | |
+| `0.2.0` | `20099` | |
+| `1.0.0` | `1000099` | |
+
+No per-release commits are needed — release-please bumps `versionName` via the
+`x-release-please-version` marker, and `versionCode` follows automatically.
+
+**Limits**: 99 prereleases per patch, 99 patches per minor, 99 minors per major.
+
 ## Configuration Files
 
 | File | Purpose |

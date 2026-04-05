@@ -8,11 +8,19 @@ plugins {
  * Derives a monotonically increasing versionCode from a semver versionName.
  *
  * Formula: major * 1_000_000 + minor * 10_000 + patch * 100 + prerelease
- *   "0.1.0-alpha.6" → 10006
- *   "0.2.0"         → 20000
- *   "1.0.0"         → 1000000
+ *   "0.1.0-alpha"   -> 10000  (bare "alpha" treated as 0)
+ *   "0.1.0-alpha.6" -> 10006
+ *   "0.1.0"         -> 10099  (stable = 99, highest in patch range)
+ *   "0.2.0"         -> 20099
+ *   "1.0.0"         -> 1000099
  *
+ * Stable releases use pre=99 so they always beat prereleases of the same version.
  * Supports up to 99 prereleases per patch, 99 patches per minor, 99 minors per major.
+ *
+ * Limitations:
+ * - Only matches "alpha" prerelease label (release-please prerelease-type config)
+ * - Prerelease numbers above 99 overflow into the patch slot
+ * - release-please bare "alpha" (no .N suffix) maps to pre=0
  */
 fun computeVersionCode(version: String): Int {
     val base = version.substringBefore("-")
@@ -20,7 +28,12 @@ fun computeVersionCode(version: String): Int {
     val major = parts.getOrElse(0) { 0 }
     val minor = parts.getOrElse(1) { 0 }
     val patch = parts.getOrElse(2) { 0 }
-    val pre = Regex("""alpha\.(\d+)""").find(version)?.groupValues?.get(1)?.toInt() ?: 0
+    val preMatch = Regex("""alpha\.(\d+)""").find(version)?.groupValues?.get(1)?.toInt()
+    val pre = when {
+        !version.contains("-") -> 99   // stable beats all prereleases
+        preMatch != null -> preMatch    // alpha.N
+        else -> 0                       // bare "alpha" (first prerelease)
+    }
     return major * 1_000_000 + minor * 10_000 + patch * 100 + pre
 }
 
