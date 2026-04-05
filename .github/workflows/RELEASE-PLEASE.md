@@ -30,9 +30,9 @@ reflect the maturity of each milestone.
 
 | Milestone | prerelease-type | Example Versions | Promotion |
 |-----------|----------------|------------------|-----------|
-| M1: First Watch | `alpha` | `0.1.0-alpha.0`, `0.1.0-alpha.1` | → `0.1.0` |
-| M2: Full Complement | `alpha` | `0.2.0-alpha.0`, `0.2.0-alpha.1` | → `0.2.0` |
-| M3: Open Ocean | `beta` | `0.3.0-beta.0`, `0.3.0-beta.1` | → `0.3.0` |
+| M1: First Watch | `alpha` | `0.1.0-alpha`, `0.1.0-alpha.1` | → `0.1.0` |
+| M2: Full Complement | `alpha` | `0.2.0-alpha`, `0.2.0-alpha.1` | → `0.2.0` |
+| M3: Open Ocean | `beta` | `0.3.0-beta`, `0.3.0-beta.1` | → `0.3.0` |
 | Future | _(stable)_ | `0.4.0`, `1.0.0` | — |
 
 ### Reasoning
@@ -49,6 +49,36 @@ Each transition is a one-line change in `release-please-config.json`:
 - **Alpha → Beta**: Change `"prerelease-type": "alpha"` to `"prerelease-type": "beta"`
 - **Beta → Stable**: Set `"prerelease": false` and remove `"prerelease-type"` and
   `"versioning-strategy"` fields
+
+## Version Code
+
+Android requires a monotonically increasing integer `versionCode` for each release.
+DeckChat computes `versionCode` from `versionName` at build time in `app/build.gradle.kts`
+using a deterministic formula:
+
+```
+versionCode = major * 1_000_000 + minor * 10_000 + patch * 100 + prerelease
+```
+
+Stable releases use `prerelease = 99` (the maximum), ensuring they always have a higher
+versionCode than any prerelease of the same version.
+
+| versionName | versionCode | Notes |
+|-------------|-------------|-------|
+| `0.1.0-alpha` | `10000` | Bare label (first prerelease after bump) |
+| `0.1.0-alpha.6` | `10006` | |
+| `0.1.0` | `10099` | Stable beats all 0.1.0 prereleases |
+| `0.3.0-beta.1` | `30001` | Any label works (alpha, beta, rc, ...) |
+| `0.3.0` | `30099` | |
+| `1.0.0` | `1000099` | |
+
+Prerelease versions must use a lowercase alphabetic label in the form `-label` or
+`-label.N`; only the trailing number affects `versionCode`, and a bare label is treated
+as prerelease 0. The build fails if any slot exceeds its range
+(minor/patch must be 0–99; prerelease must be 0–98, since 99 is reserved for stable).
+
+No per-release commits are needed — release-please bumps `versionName` via the
+`x-release-please-version` marker, and `versionCode` follows automatically.
 
 ## Configuration Files
 

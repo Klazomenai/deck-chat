@@ -4,6 +4,44 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+/**
+ * Derives a monotonically increasing versionCode from a semver versionName.
+ *
+ * Formula: major * 1_000_000 + minor * 10_000 + patch * 100 + prerelease
+ *   "0.1.0-alpha"   -> 10000  (bare label, first prerelease after bump)
+ *   "0.1.0-alpha.6" -> 10006
+ *   "0.1.0"         -> 10099  (stable = 99, highest in patch range)
+ *   "0.3.0-beta.2"  -> 30002
+ *   "1.0.0"         -> 1000099
+ *
+ * Accepted formats: `major.minor.patch`, `major.minor.patch-label`, and
+ * `major.minor.patch-label.N`, where label is lowercase letters ([a-z]+) and
+ * only the optional trailing number affects the prerelease slot.
+ *
+ * Stable releases use pre=99 so they always beat prereleases of the same version.
+ * Supports up to 98 prereleases per patch (99 reserved for stable), 99 patches per minor,
+ * 99 minors per major.
+ * Build fails if any slot exceeds its range.
+ */
+fun computeVersionCode(version: String): Int {
+    val match = Regex("""^(\d+)\.(\d+)\.(\d+)(?:-[a-z]+(?:\.(\d+))?)?$""").matchEntire(version)
+        ?: throw GradleException("Unsupported version format '$version'")
+    val major = match.groupValues[1].toLong()
+    val minor = match.groupValues[2].toLong()
+    val patch = match.groupValues[3].toLong()
+    val pre = when {
+        !version.contains("-") -> 99L                              // stable
+        match.groupValues[4].isNotEmpty() -> match.groupValues[4].toLong() // label.N
+        else -> 0L                                                 // bare label
+    }
+    require(minor in 0L..99L) { "minor $minor exceeds 0..99 in '$version'" }
+    require(patch in 0L..99L) { "patch $patch exceeds 0..99 in '$version'" }
+    require(pre in 0L..98L) { "prerelease $pre exceeds 0..98 in '$version' (99 is reserved for stable)" }
+    val code = major * 1_000_000L + minor * 10_000L + patch * 100L + pre
+    require(code <= Int.MAX_VALUE.toLong()) { "versionCode $code exceeds Int.MAX_VALUE for '$version'" }
+    return code.toInt()
+}
+
 android {
     namespace = "dev.klazomenai.deckchat"
     compileSdk = 36
@@ -12,8 +50,9 @@ android {
         applicationId = "dev.klazomenai.deckchat"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0-alpha.6" // x-release-please-version
+        val versionStr = "0.1.0-alpha.6" // x-release-please-version
+        versionName = versionStr
+        versionCode = computeVersionCode(versionStr)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
