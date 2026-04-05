@@ -4,6 +4,26 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+/**
+ * Derives a monotonically increasing versionCode from a semver versionName.
+ *
+ * Formula: major * 1_000_000 + minor * 10_000 + patch * 100 + prerelease
+ *   "0.1.0-alpha.6" → 10006
+ *   "0.2.0"         → 20000
+ *   "1.0.0"         → 1000000
+ *
+ * Supports up to 99 prereleases per patch, 99 patches per minor, 99 minors per major.
+ */
+fun computeVersionCode(version: String): Int {
+    val base = version.substringBefore("-")
+    val parts = base.split(".").map { it.toInt() }
+    val major = parts.getOrElse(0) { 0 }
+    val minor = parts.getOrElse(1) { 0 }
+    val patch = parts.getOrElse(2) { 0 }
+    val pre = Regex("""alpha\.(\d+)""").find(version)?.groupValues?.get(1)?.toInt() ?: 0
+    return major * 1_000_000 + minor * 10_000 + patch * 100 + pre
+}
+
 android {
     namespace = "dev.klazomenai.deckchat"
     compileSdk = 36
@@ -12,8 +32,9 @@ android {
         applicationId = "dev.klazomenai.deckchat"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0-alpha.6" // x-release-please-version
+        val versionStr = "0.1.0-alpha.6" // x-release-please-version
+        versionName = versionStr
+        versionCode = computeVersionCode(versionStr)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
