@@ -114,33 +114,6 @@ in
       echo "Starting emulator '$AVD_NAME'..."
       "$ANDROID_HOME/emulator/emulator" -avd "$AVD_NAME" -no-snapshot-save "$@"
     '';
-
-    setup-emulator.exec = ''
-      set -euo pipefail
-      if [ -z "''${ANDROID_SERIAL:-}" ]; then
-        device_lines="$(adb devices | tail -n +2 | grep -v '^\*' | sed '/^[[:space:]]*$/d')"
-        device_count="$(printf '%s\n' "$device_lines" | awk '$2 == "device" {count++} END {print count+0}')"
-        if [ "$device_count" -eq 0 ]; then
-          echo "No device connected — start an emulator first."
-          exit 1
-        fi
-        if [ "$device_count" -gt 1 ]; then
-          echo "Multiple devices detected — set ANDROID_SERIAL to the target emulator."
-          adb devices -l
-          exit 1
-        fi
-      fi
-      echo "Waiting for emulator to boot..."
-      adb wait-for-device
-      adb shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 1; done'
-      echo "Disabling animations..."
-      adb shell settings put global window_animation_scale 0.0
-      adb shell settings put global transition_animation_scale 0.0
-      adb shell settings put global animator_duration_scale 0.0
-      echo "Dismissing keyguard..."
-      adb shell wm dismiss-keyguard
-      echo "Emulator configured for SwiftShader stability."
-    '';
   };
 
   enterShell = ''
@@ -158,7 +131,6 @@ in
     echo "Device:"
     echo "  devices                    — List connected devices (adb)"
     echo "  emulator                   — Launch Android emulator (API 35)"
-    echo "  setup-emulator             — Configure emulator for SwiftShader stability"
     echo "  logcat                     — Filtered logcat for DeckChat"
     echo "  device-test                — Run instrumented tests on device or emulator"
     echo "  adb                        — Android Debug Bridge (direct)"
