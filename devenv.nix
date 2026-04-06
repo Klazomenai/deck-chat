@@ -114,6 +114,20 @@ in
       echo "Starting emulator '$AVD_NAME'..."
       "$ANDROID_HOME/emulator/emulator" -avd "$AVD_NAME" -no-snapshot-save "$@"
     '';
+
+    setup-emulator.exec = ''
+      set -euo pipefail
+      echo "Waiting for emulator to boot..."
+      adb wait-for-device
+      adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+      echo "Disabling animations..."
+      adb shell settings put global window_animation_scale 0
+      adb shell settings put global transition_animation_scale 0
+      adb shell settings put global animator_duration_scale 0
+      echo "Dismissing keyguard..."
+      adb shell wm dismiss-keyguard
+      echo "Emulator configured for SwiftShader stability."
+    '';
   };
 
   enterShell = ''
@@ -131,6 +145,7 @@ in
     echo "Device:"
     echo "  devices                    — List connected devices (adb)"
     echo "  emulator                   — Launch Android emulator (API 35)"
+    echo "  setup-emulator             — Configure emulator for SwiftShader stability"
     echo "  logcat                     — Filtered logcat for DeckChat"
     echo "  device-test                — Run instrumented tests on device or emulator"
     echo "  adb                        — Android Debug Bridge (direct)"
