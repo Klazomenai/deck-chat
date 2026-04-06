@@ -71,8 +71,18 @@ KVM for hardware acceleration (the emulator can run without it but will be slowe
 
 ```bash
 sudo usermod -aG kvm $USER    # one-time setup on Linux (requires logout/login)
-emulator                       # creates AVD on first run, then launches
 ```
+
+Launch the emulator and configure it for SwiftShader stability:
+
+```bash
+emulator                       # terminal 1: creates AVD on first run, then launches
+setup-emulator                 # terminal 2: wait for boot, disable animations
+```
+
+The Nix-packaged emulator uses SwiftShader (CPU-based Vulkan) because Nix sandboxing
+prevents host GPU passthrough. `setup-emulator` disables animations and dismisses the
+keyguard to prevent ANR dialogs caused by slow software rendering.
 
 SettingsActivity, HeadsetButtonReceiver, and permission-denial tests run on emulator.
 Bluetooth and microphone-dependent tests skip (no mic/BT hardware).
