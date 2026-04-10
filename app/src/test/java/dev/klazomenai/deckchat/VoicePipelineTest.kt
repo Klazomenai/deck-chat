@@ -47,7 +47,9 @@ class VoicePipelineTest {
             viewModels.clear()
         } finally {
             Dispatchers.resetMain()
-            audioFile.delete()
+            if (::audioFile.isInitialized) {
+                audioFile.delete()
+            }
         }
     }
 
