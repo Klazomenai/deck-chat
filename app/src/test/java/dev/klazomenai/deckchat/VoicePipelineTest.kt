@@ -42,10 +42,15 @@ class VoicePipelineTest {
 
     @After
     fun tearDown() {
-        viewModels.forEach { it.releaseResources() }
-        viewModels.clear()
-        Dispatchers.resetMain()
-        audioFile.delete()
+        try {
+            viewModels.forEach { it.releaseResources() }
+            viewModels.clear()
+        } finally {
+            Dispatchers.resetMain()
+            if (::audioFile.isInitialized) {
+                audioFile.delete()
+            }
+        }
     }
 
     private fun createViewModel(
