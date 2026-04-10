@@ -29,10 +29,13 @@ class MainViewModelTest {
 
     @After
     fun tearDown() {
-        viewModels.forEach { it.releaseResources() }
-        viewModels.clear()
-        Dispatchers.resetMain()
-        audioFile.delete()
+        try {
+            viewModels.forEach { it.releaseResources() }
+            viewModels.clear()
+        } finally {
+            Dispatchers.resetMain()
+            audioFile.delete()
+        }
     }
 
     private fun createViewModel(
