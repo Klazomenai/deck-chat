@@ -284,13 +284,15 @@ class MainViewModelTest {
 
     @Test
     fun `recording started clears transcript`() = runTest {
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(sttResult = "hello crew")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Simulate a previous pipeline run that set transcript values
+        // Drive pipeline to set lastUserText
         RecordingService.emitEvent(ServiceEvent.RecordingStopped)
         testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("hello crew", viewModel.lastUserText.value)
 
+        // New recording should clear it
         RecordingService.emitEvent(ServiceEvent.RecordingStarted)
         testDispatcher.scheduler.advanceUntilIdle()
 
