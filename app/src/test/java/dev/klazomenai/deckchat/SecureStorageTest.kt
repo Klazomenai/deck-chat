@@ -178,6 +178,21 @@ class SecureStorageTest {
     }
 
     @Test
+    fun `debugMode defaults to false`() {
+        val storage = createStorage()
+        assertFalse(storage.debugMode)
+    }
+
+    @Test
+    fun `debugMode round-trips`() {
+        val storage = createStorage()
+        storage.debugMode = true
+        assertTrue(storage.debugMode)
+        storage.debugMode = false
+        assertFalse(storage.debugMode)
+    }
+
+    @Test
     fun `responseTimeoutSec getter falls back on out-of-range stored value`() {
         val storage = createStorage()
         // Write an out-of-range value directly to prefs (simulates corruption)

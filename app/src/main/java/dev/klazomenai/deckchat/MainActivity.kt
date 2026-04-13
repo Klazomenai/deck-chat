@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
             responseTimeoutMs = timeoutMs,
         )
     }
+    private val storage by lazy { SecureStorage(applicationContext) }
     private var currentIndicatorColor: Int = 0
     private var colorAnimator: ValueAnimator? = null
     private var debugMode = false
@@ -138,7 +139,25 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        debugMode = SecureStorage(this).debugMode
+        debugMode = storage.debugMode
+        // Re-render transcript visibility when returning from Settings
+        val debugUserText = findViewById<TextView>(R.id.debug_user_text)
+        val debugCrewText = findViewById<TextView>(R.id.debug_crew_text)
+        val userText = viewModel.lastUserText.value
+        val crewMsg = viewModel.lastCrewResponse.value
+        if (debugMode && userText != null) {
+            debugUserText.text = getString(R.string.debug_transcript_you, userText)
+            debugUserText.visibility = View.VISIBLE
+        } else {
+            debugUserText.visibility = View.GONE
+        }
+        if (debugMode && crewMsg != null) {
+            val name = CrewRegistry.lookup(crewMsg.crewName).displayName
+            debugCrewText.text = getString(R.string.debug_transcript_crew, name, crewMsg.body)
+            debugCrewText.visibility = View.VISIBLE
+        } else {
+            debugCrewText.visibility = View.GONE
+        }
     }
 
     /**

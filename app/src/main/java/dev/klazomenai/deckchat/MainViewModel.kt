@@ -57,6 +57,8 @@ class MainViewModel(
                 when (event) {
                     is ServiceEvent.RecordingStarted -> {
                         _recordingDurationMs.value = 0L
+                        _lastUserText.value = null
+                        _lastCrewResponse.value = null
                         _state.value = PipelineState.Recording
                     }
                     is ServiceEvent.RecordingProgress -> {
@@ -126,9 +128,6 @@ class MainViewModel(
     private fun runPipeline() {
         viewModelScope.launch {
             try {
-                _lastUserText.value = null
-                _lastCrewResponse.value = null
-
                 // STT
                 val audioFile = audioFileProvider()
                 val text = sttEngine.transcribe(audioFile)
