@@ -6,6 +6,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 /**
  * Settings screen for configuring the Matrix homeserver connection.
@@ -27,6 +28,7 @@ class SettingsActivity : AppCompatActivity() {
         val homeserverInput = findViewById<EditText>(R.id.homeserver_url_input)
         val roomIdInput = findViewById<EditText>(R.id.room_id_input)
         val timeoutInput = findViewById<EditText>(R.id.response_timeout_input)
+        val debugSwitch = findViewById<SwitchMaterial>(R.id.debug_mode_switch)
         val statusText = findViewById<TextView>(R.id.session_status)
         val saveButton = findViewById<Button>(R.id.save_button)
         val clearButton = findViewById<Button>(R.id.clear_session_button)
@@ -35,6 +37,7 @@ class SettingsActivity : AppCompatActivity() {
         homeserverInput.setText(storage.homeserverUrl ?: "")
         roomIdInput.setText(storage.roomId ?: "")
         timeoutInput.setText(storage.responseTimeoutSec.toString())
+        debugSwitch.isChecked = storage.debugMode
         updateSessionStatus(statusText)
 
         saveButton.setOnClickListener {
@@ -65,6 +68,7 @@ class SettingsActivity : AppCompatActivity() {
             storage.homeserverUrl = url
             storage.roomId = roomId.ifEmpty { null }
             storage.responseTimeoutSec = timeoutSec
+            storage.debugMode = debugSwitch.isChecked
 
             updateSessionStatus(statusText)
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()

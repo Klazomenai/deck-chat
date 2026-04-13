@@ -43,6 +43,7 @@ class MainActivity : AppCompatActivity() {
     }
     private var currentIndicatorColor: Int = 0
     private var colorAnimator: ValueAnimator? = null
+    private var debugMode = false
 
     private val requestAudioPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -70,6 +71,8 @@ class MainActivity : AppCompatActivity() {
         val stateLabel = findViewById<TextView>(R.id.state_label)
         val stateDetail = findViewById<TextView>(R.id.state_detail)
         val stateIndicator = findViewById<View>(R.id.state_indicator)
+        val debugUserText = findViewById<TextView>(R.id.debug_user_text)
+        val debugCrewText = findViewById<TextView>(R.id.debug_crew_text)
         val settingsFab = findViewById<FloatingActionButton>(R.id.settings_fab)
         val pttFab = findViewById<FloatingActionButton>(R.id.ptt_fab)
 
@@ -104,6 +107,38 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.lastUserText.collect { text ->
+                    if (debugMode && text != null) {
+                        debugUserText.text = getString(R.string.debug_transcript_you, text)
+                        debugUserText.visibility = View.VISIBLE
+                    } else {
+                        debugUserText.visibility = View.GONE
+                    }
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.lastCrewResponse.collect { msg ->
+                    if (debugMode && msg != null) {
+                        val name = CrewRegistry.lookup(msg.crewName).displayName
+                        debugCrewText.text = getString(R.string.debug_transcript_crew, name, msg.body)
+                        debugCrewText.visibility = View.VISIBLE
+                    } else {
+                        debugCrewText.visibility = View.GONE
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        debugMode = SecureStorage(this).debugMode
     }
 
     /**

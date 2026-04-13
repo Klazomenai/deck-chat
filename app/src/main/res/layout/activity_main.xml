@@ -45,6 +45,34 @@
             android:paddingStart="24dp"
             android:paddingEnd="24dp" />
 
+        <!-- Debug transcript: last user message -->
+        <TextView
+            android:id="@+id/debug_user_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textSize="13sp"
+            android:textColor="?android:textColorSecondary"
+            android:visibility="gone"
+            android:maxLines="3"
+            android:ellipsize="end"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp" />
+
+        <!-- Debug transcript: last crew response -->
+        <TextView
+            android:id="@+id/debug_crew_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="13sp"
+            android:textColor="?android:textColorSecondary"
+            android:visibility="gone"
+            android:maxLines="5"
+            android:ellipsize="end"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp" />
+
     </LinearLayout>
 
     <!-- Push-to-talk FAB (bottom-center) -->
