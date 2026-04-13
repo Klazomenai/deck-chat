@@ -45,6 +45,8 @@ class MainActivity : AppCompatActivity() {
     private var currentIndicatorColor: Int = 0
     private var colorAnimator: ValueAnimator? = null
     private var debugMode = false
+    private lateinit var debugUserText: TextView
+    private lateinit var debugCrewText: TextView
 
     private val requestAudioPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -72,10 +74,12 @@ class MainActivity : AppCompatActivity() {
         val stateLabel = findViewById<TextView>(R.id.state_label)
         val stateDetail = findViewById<TextView>(R.id.state_detail)
         val stateIndicator = findViewById<View>(R.id.state_indicator)
-        val debugUserText = findViewById<TextView>(R.id.debug_user_text)
-        val debugCrewText = findViewById<TextView>(R.id.debug_crew_text)
+        debugUserText = findViewById(R.id.debug_user_text)
+        debugCrewText = findViewById(R.id.debug_crew_text)
         val settingsFab = findViewById<FloatingActionButton>(R.id.settings_fab)
         val pttFab = findViewById<FloatingActionButton>(R.id.ptt_fab)
+
+        debugMode = storage.debugMode
 
         settingsFab.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -111,28 +115,13 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.lastUserText.collect { text ->
-                    if (debugMode && text != null) {
-                        debugUserText.text = getString(R.string.debug_transcript_you, text)
-                        debugUserText.visibility = View.VISIBLE
-                    } else {
-                        debugUserText.visibility = View.GONE
-                    }
-                }
+                viewModel.lastUserText.collect { updateTranscript() }
             }
         }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.lastCrewResponse.collect { msg ->
-                    if (debugMode && msg != null) {
-                        val name = CrewRegistry.lookup(msg.crewName).displayName
-                        debugCrewText.text = getString(R.string.debug_transcript_crew, name, msg.body)
-                        debugCrewText.visibility = View.VISIBLE
-                    } else {
-                        debugCrewText.visibility = View.GONE
-                    }
-                }
+                viewModel.lastCrewResponse.collect { updateTranscript() }
             }
         }
     }
@@ -140,9 +129,10 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         debugMode = storage.debugMode
-        // Re-render transcript visibility when returning from Settings
-        val debugUserText = findViewById<TextView>(R.id.debug_user_text)
-        val debugCrewText = findViewById<TextView>(R.id.debug_crew_text)
+        updateTranscript()
+    }
+
+    private fun updateTranscript() {
         val userText = viewModel.lastUserText.value
         val crewMsg = viewModel.lastCrewResponse.value
         if (debugMode && userText != null) {
