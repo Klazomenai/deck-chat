@@ -57,6 +57,20 @@
         android:inputType="number"
         android:layout_marginBottom="16dp" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/debug_heading"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/debug_mode_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/debug_mode_label"
+        android:layout_marginBottom="16dp" />
+
     <Button
         android:id="@+id/save_button"
         android:layout_width="match_parent"

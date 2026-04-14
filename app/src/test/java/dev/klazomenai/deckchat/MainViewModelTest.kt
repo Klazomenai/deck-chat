@@ -273,6 +273,55 @@ class MainViewModelTest {
         assertEquals(PipelineState.Recording, viewModel.state.value)
     }
 
+    // --- Debug transcript ---
+
+    @Test
+    fun `lastUserText and lastCrewResponse default to null`() {
+        val viewModel = createViewModel()
+        assertNull(viewModel.lastUserText.value)
+        assertNull(viewModel.lastCrewResponse.value)
+    }
+
+    @Test
+    fun `recording started clears transcript`() = runTest {
+        val viewModel = createViewModel(sttResult = "hello crew")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Drive pipeline to set lastUserText
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("hello crew", viewModel.lastUserText.value)
+
+        // New recording should clear it
+        RecordingService.emitEvent(ServiceEvent.RecordingStarted)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.lastUserText.value)
+        assertNull(viewModel.lastCrewResponse.value)
+    }
+
+    @Test
+    fun `local echo pipeline sets lastUserText`() = runTest {
+        val viewModel = createViewModel(sttResult = "hello crew")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("hello crew", viewModel.lastUserText.value)
+    }
+
+    @Test
+    fun `blank STT does not set lastUserText`() = runTest {
+        val viewModel = createViewModel(sttResult = "")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.lastUserText.value)
+    }
+
     // --- Voice profile ---
 
     @Test

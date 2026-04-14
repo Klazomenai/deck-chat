@@ -10,6 +10,11 @@
     <string name="response_timeout_label">Response timeout (seconds)</string>
     <string name="response_timeout_hint">60</string>
     <string name="response_timeout_range_error">Enter a value between 5 and 300 seconds</string>
+    <string name="debug_heading">Debug</string>
+    <string name="debug_mode_label">Show transcript</string>
+    <string name="debug_transcript_you">You: %1$s</string>
+    <string name="debug_transcript_crew">%1$s: %2$s</string>
+
     <string name="session_heading">Matrix Session</string>
     <string name="session_active">Logged in as %1$s</string>
     <string name="session_none">No active session</string>

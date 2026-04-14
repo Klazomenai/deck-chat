@@ -43,6 +43,12 @@ class MainViewModel(
     private val _recordingDurationMs = MutableStateFlow(0L)
     val recordingDurationMs: StateFlow<Long> = _recordingDurationMs.asStateFlow()
 
+    private val _lastUserText = MutableStateFlow<String?>(null)
+    val lastUserText: StateFlow<String?> = _lastUserText.asStateFlow()
+
+    private val _lastCrewResponse = MutableStateFlow<CrewMessage?>(null)
+    val lastCrewResponse: StateFlow<CrewMessage?> = _lastCrewResponse.asStateFlow()
+
     private var pendingResponse: CompletableDeferred<CrewMessage>? = null
 
     init {
@@ -51,6 +57,8 @@ class MainViewModel(
                 when (event) {
                     is ServiceEvent.RecordingStarted -> {
                         _recordingDurationMs.value = 0L
+                        _lastUserText.value = null
+                        _lastCrewResponse.value = null
                         _state.value = PipelineState.Recording
                     }
                     is ServiceEvent.RecordingProgress -> {
@@ -129,6 +137,7 @@ class MainViewModel(
                     return@launch
                 }
 
+                _lastUserText.value = text
                 _state.value = PipelineState.Transcribed(text)
 
                 if (matrixClient != null && roomId != null) {
@@ -150,6 +159,7 @@ class MainViewModel(
                         pendingResponse = null
                     }
 
+                    _lastCrewResponse.value = response
                     val displayName = CrewRegistry.lookup(response.crewName).displayName
                     _state.value = PipelineState.Speaking(displayName)
                     ttsEngine.speak(response.crewName, response.body)

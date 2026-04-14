@@ -21,6 +21,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -41,8 +42,12 @@ class MainActivity : AppCompatActivity() {
             responseTimeoutMs = timeoutMs,
         )
     }
+    private val storage by lazy { SecureStorage(applicationContext) }
     private var currentIndicatorColor: Int = 0
     private var colorAnimator: ValueAnimator? = null
+    private var debugMode = false
+    private lateinit var debugUserText: TextView
+    private lateinit var debugCrewText: TextView
 
     private val requestAudioPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -70,8 +75,12 @@ class MainActivity : AppCompatActivity() {
         val stateLabel = findViewById<TextView>(R.id.state_label)
         val stateDetail = findViewById<TextView>(R.id.state_detail)
         val stateIndicator = findViewById<View>(R.id.state_indicator)
+        debugUserText = findViewById(R.id.debug_user_text)
+        debugCrewText = findViewById(R.id.debug_crew_text)
         val settingsFab = findViewById<FloatingActionButton>(R.id.settings_fab)
         val pttFab = findViewById<FloatingActionButton>(R.id.ptt_fab)
+
+        debugMode = storage.debugMode
 
         settingsFab.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -103,6 +112,37 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(viewModel.lastUserText, viewModel.lastCrewResponse) { _, _ -> }
+                    .collect { updateTranscript() }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        debugMode = storage.debugMode
+        updateTranscript()
+    }
+
+    private fun updateTranscript() {
+        val userText = viewModel.lastUserText.value
+        val crewMsg = viewModel.lastCrewResponse.value
+        if (debugMode && userText != null) {
+            debugUserText.text = getString(R.string.debug_transcript_you, userText)
+            debugUserText.visibility = View.VISIBLE
+        } else {
+            debugUserText.visibility = View.GONE
+        }
+        if (debugMode && crewMsg != null && userText != null) {
+            val name = CrewRegistry.lookup(crewMsg.crewName).displayName
+            debugCrewText.text = getString(R.string.debug_transcript_crew, name, crewMsg.body)
+            debugCrewText.visibility = View.VISIBLE
+        } else {
+            debugCrewText.visibility = View.GONE
         }
     }
 
