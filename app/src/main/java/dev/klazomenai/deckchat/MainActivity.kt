@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             debugUserText.visibility = View.GONE
         }
-        if (debugMode && crewMsg != null) {
+        if (debugMode && crewMsg != null && userText != null) {
             val name = CrewRegistry.lookup(crewMsg.crewName).displayName
             debugCrewText.text = getString(R.string.debug_transcript_crew, name, crewMsg.body)
             debugCrewText.visibility = View.VISIBLE
