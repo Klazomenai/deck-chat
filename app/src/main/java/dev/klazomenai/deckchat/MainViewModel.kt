@@ -5,11 +5,11 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 
 /**
@@ -49,7 +50,10 @@ class MainViewModel(
     private val _lastCrewResponse = MutableStateFlow<CrewMessage?>(null)
     val lastCrewResponse: StateFlow<CrewMessage?> = _lastCrewResponse.asStateFlow()
 
-    private var pendingResponse: CompletableDeferred<CrewMessage>? = null
+    @VisibleForTesting
+    internal val crewMessages = Channel<CrewMessage>(Channel.UNLIMITED)
+    @Volatile
+    private var awaitingResponse = false
 
     init {
         viewModelScope.launch {
@@ -101,9 +105,7 @@ class MainViewModel(
 
                     Log.d(TAG, "Session restored, starting sync")
                     matrixClient.startSync { crewMessage ->
-                        viewModelScope.launch {
-                            pendingResponse?.complete(crewMessage)
-                        }
+                        if (awaitingResponse) crewMessages.trySend(crewMessage)
                     }
 
                     Log.d(TAG, "Sync started, listening to room")
@@ -142,8 +144,9 @@ class MainViewModel(
 
                 if (matrixClient != null && roomId != null) {
                     // Online mode: send to Matrix, await crew response, speak it
-                    val responseDeferred = CompletableDeferred<CrewMessage>()
-                    pendingResponse = responseDeferred
+                    // Drain stale messages before opening the gate
+                    while (crewMessages.tryReceive().isSuccess) { /* drain */ }
+                    awaitingResponse = true
                     val response: CrewMessage
                     try {
                         _state.value = PipelineState.Processing("Sending")
@@ -151,12 +154,12 @@ class MainViewModel(
 
                         _state.value = PipelineState.Processing("Waiting for crew")
                         response = try {
-                            withTimeout(responseTimeoutMs) { responseDeferred.await() }
+                            withTimeout(responseTimeoutMs) { awaitFinalResponse() }
                         } catch (e: TimeoutCancellationException) {
                             throw PipelineTimeoutException(e)
                         }
                     } finally {
-                        pendingResponse = null
+                        awaitingResponse = false
                     }
 
                     _lastCrewResponse.value = response
@@ -175,6 +178,22 @@ class MainViewModel(
                 _state.value = PipelineState.Error(classifyError(e))
             }
         }
+    }
+
+    /**
+     * Waits for crew messages, returning the last one after a settling period.
+     * Handles delegation chains where multiple crew members respond sequentially.
+     */
+    private suspend fun awaitFinalResponse(): CrewMessage {
+        var latest = crewMessages.receive() // block until first message
+        while (true) {
+            val next = withTimeoutOrNull(DELEGATION_SETTLE_MS) {
+                crewMessages.receive()
+            }
+            if (next == null) break // no more messages within settle window
+            latest = next
+        }
+        return latest
     }
 
     // Stage strings are set and checked in this file only. Extract to a sealed type
@@ -239,8 +258,7 @@ class MainViewModel(
 
     @VisibleForTesting
     internal fun releaseResources() {
-        pendingResponse?.cancel()
-        pendingResponse = null
+        crewMessages.close()
         sttEngine.close()
         ttsEngine.close()
         matrixClient?.let { client ->
@@ -271,6 +289,7 @@ class MainViewModel(
         private const val TAG = "DeckChat.ViewModel"
         internal val DEFAULT_RESPONSE_TIMEOUT_MS = SecureStorage.DEFAULT_RESPONSE_TIMEOUT_SEC * 1000L
         internal const val DEFAULT_CREW = "maren"
+        internal const val DELEGATION_SETTLE_MS = 5_000L
     }
 }
 

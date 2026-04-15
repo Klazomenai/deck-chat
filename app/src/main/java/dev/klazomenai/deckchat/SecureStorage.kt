@@ -84,8 +84,7 @@ class SecureStorage(
     /** Response timeout in seconds. Default 60s — covers crew delegation chains. */
     var responseTimeoutSec: Int
         get() = prefs.getInt(KEY_RESPONSE_TIMEOUT_SEC, DEFAULT_RESPONSE_TIMEOUT_SEC)
-            .takeIf { it in MIN_RESPONSE_TIMEOUT_SEC..MAX_RESPONSE_TIMEOUT_SEC }
-            ?: DEFAULT_RESPONSE_TIMEOUT_SEC
+            .coerceIn(MIN_RESPONSE_TIMEOUT_SEC, MAX_RESPONSE_TIMEOUT_SEC)
         set(value) = prefs.edit().putInt(
             KEY_RESPONSE_TIMEOUT_SEC,
             value.coerceIn(MIN_RESPONSE_TIMEOUT_SEC, MAX_RESPONSE_TIMEOUT_SEC),
@@ -229,7 +228,7 @@ class SecureStorage(
         private const val KEY_RESPONSE_TIMEOUT_SEC = "response_timeout_sec"
         private const val KEY_DEBUG_MODE = "debug_mode"
         const val DEFAULT_RESPONSE_TIMEOUT_SEC = 60
-        const val MIN_RESPONSE_TIMEOUT_SEC = 5
+        const val MIN_RESPONSE_TIMEOUT_SEC = 15
         const val MAX_RESPONSE_TIMEOUT_SEC = 300
     }
 }

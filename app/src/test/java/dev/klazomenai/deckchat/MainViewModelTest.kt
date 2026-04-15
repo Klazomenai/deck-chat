@@ -322,6 +322,96 @@ class MainViewModelTest {
         assertNull(viewModel.lastUserText.value)
     }
 
+    // --- Delegation settling ---
+
+    private fun createOnlineViewModel(
+        sttResult: String = "hello",
+        matrixClient: MockMatrixClient = MockMatrixClient(),
+        roomId: String = "!room:example.com",
+    ): Pair<MainViewModel, MockMatrixClient> {
+        val tts = MockTtsEngine()
+        val vm = MainViewModel(
+            sttEngine = MockSttEngine(returnText = sttResult),
+            ttsEngine = tts,
+            matrixClient = matrixClient,
+            roomId = roomId,
+            audioFileProvider = { audioFile },
+            ioDispatcher = testDispatcher,
+        ).also { viewModels.add(it) }
+        return vm to matrixClient
+    }
+
+    @Test
+    fun `single crew message spoken after settling`() = runTest {
+        val (viewModel, _) = createOnlineViewModel()
+        testDispatcher.scheduler.advanceUntilIdle() // init + sync
+
+        // Trigger pipeline — use runCurrent to advance without blowing through timeout
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.runCurrent() // process event
+        testDispatcher.scheduler.runCurrent() // process pipeline launch + STT + send
+
+        // Pipeline is now suspended at crewMessages.receive()
+        viewModel.crewMessages.trySend(CrewMessage("maren", "dispatch", "Aye aye", "@bridge:example.com"))
+        testDispatcher.scheduler.runCurrent()
+
+        // Response received but settle window not elapsed — should not be spoken yet
+        assertNull(viewModel.lastCrewResponse.value)
+
+        // Advance past settling window so pipeline completes
+        testDispatcher.scheduler.advanceTimeBy(MainViewModel.DELEGATION_SETTLE_MS + 100)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Aye aye", viewModel.lastCrewResponse.value?.body)
+        assertEquals("maren", viewModel.lastCrewResponse.value?.crewName)
+    }
+
+    @Test
+    fun `delegation chain speaks last message`() = runTest {
+        val (viewModel, _) = createOnlineViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.runCurrent()
+        testDispatcher.scheduler.runCurrent()
+
+        // Maren responds first
+        viewModel.crewMessages.trySend(CrewMessage("maren", "dispatch", "Passing to Crest", "@bridge:example.com"))
+        testDispatcher.scheduler.runCurrent()
+
+        // Maren received but settle window not elapsed — should not be finalized
+        assertNull(viewModel.lastCrewResponse.value)
+
+        // Crest responds 2s later (within settle window)
+        testDispatcher.scheduler.advanceTimeBy(2_000)
+        viewModel.crewMessages.trySend(CrewMessage("crest", "dispatch", "Signal received", "@bridge:example.com"))
+        testDispatcher.scheduler.runCurrent()
+
+        // Crest received but settle window restarted — still not finalized
+        assertNull(viewModel.lastCrewResponse.value)
+
+        // Advance past settle window from last message
+        testDispatcher.scheduler.advanceTimeBy(MainViewModel.DELEGATION_SETTLE_MS + 100)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Signal received", viewModel.lastCrewResponse.value?.body)
+        assertEquals("crest", viewModel.lastCrewResponse.value?.crewName)
+    }
+
+    @Test
+    fun `messages ignored when not awaiting response`() = runTest {
+        val (viewModel, mock) = createOnlineViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Pipeline is idle — not awaiting response.
+        // simulateMessage goes through the callback which checks awaitingResponse.
+        mock.simulateMessage(CrewMessage("maren", "dispatch", "Stale", "@bridge:example.com"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Channel should be empty since awaitingResponse was false
+        assertTrue(viewModel.crewMessages.tryReceive().isFailure)
+    }
+
     // --- Voice profile ---
 
     @Test
