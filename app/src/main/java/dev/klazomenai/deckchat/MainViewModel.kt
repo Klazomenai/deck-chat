@@ -144,6 +144,8 @@ class MainViewModel(
 
                 if (matrixClient != null && roomId != null) {
                     // Online mode: send to Matrix, await crew response, speak it
+                    // Drain stale messages before opening the gate
+                    while (crewMessages.tryReceive().isSuccess) { /* drain */ }
                     awaitingResponse = true
                     val response: CrewMessage
                     try {
@@ -183,8 +185,6 @@ class MainViewModel(
      * Handles delegation chains where multiple crew members respond sequentially.
      */
     private suspend fun awaitFinalResponse(): CrewMessage {
-        // Drain any messages buffered between awaitingResponse=true and now
-        while (crewMessages.tryReceive().isSuccess) { /* drain */ }
         var latest = crewMessages.receive() // block until first message
         while (true) {
             val next = withTimeoutOrNull(DELEGATION_SETTLE_MS) {
