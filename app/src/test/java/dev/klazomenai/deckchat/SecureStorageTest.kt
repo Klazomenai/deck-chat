@@ -193,12 +193,12 @@ class SecureStorageTest {
     }
 
     @Test
-    fun `responseTimeoutSec getter falls back on out-of-range stored value`() {
+    fun `responseTimeoutSec getter clamps out-of-range stored value to minimum`() {
         val storage = createStorage()
-        // Write an out-of-range value directly to prefs (simulates corruption)
+        // Write an out-of-range value directly to prefs (simulates corruption or upgrade)
         val prefs = RuntimeEnvironment.getApplication()
             .getSharedPreferences("test_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("response_timeout_sec", -1).commit()
-        assertEquals(SecureStorage.DEFAULT_RESPONSE_TIMEOUT_SEC, storage.responseTimeoutSec)
+        assertEquals(SecureStorage.MIN_RESPONSE_TIMEOUT_SEC, storage.responseTimeoutSec)
     }
 }

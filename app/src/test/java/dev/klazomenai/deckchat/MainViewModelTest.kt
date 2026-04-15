@@ -355,6 +355,9 @@ class MainViewModelTest {
         viewModel.crewMessages.trySend(CrewMessage("maren", "dispatch", "Aye aye", "@bridge:example.com"))
         testDispatcher.scheduler.runCurrent()
 
+        // Response received but settle window not elapsed — should not be spoken yet
+        assertNull(viewModel.lastCrewResponse.value)
+
         // Advance past settling window so pipeline completes
         testDispatcher.scheduler.advanceTimeBy(MainViewModel.DELEGATION_SETTLE_MS + 100)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -376,10 +379,16 @@ class MainViewModelTest {
         viewModel.crewMessages.trySend(CrewMessage("maren", "dispatch", "Passing to Crest", "@bridge:example.com"))
         testDispatcher.scheduler.runCurrent()
 
+        // Maren received but settle window not elapsed — should not be finalized
+        assertNull(viewModel.lastCrewResponse.value)
+
         // Crest responds 2s later (within settle window)
         testDispatcher.scheduler.advanceTimeBy(2_000)
         viewModel.crewMessages.trySend(CrewMessage("crest", "dispatch", "Signal received", "@bridge:example.com"))
         testDispatcher.scheduler.runCurrent()
+
+        // Crest received but settle window restarted — still not finalized
+        assertNull(viewModel.lastCrewResponse.value)
 
         // Advance past settle window from last message
         testDispatcher.scheduler.advanceTimeBy(MainViewModel.DELEGATION_SETTLE_MS + 100)
