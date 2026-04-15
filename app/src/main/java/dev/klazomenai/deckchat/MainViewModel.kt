@@ -144,15 +144,18 @@ class MainViewModel(
 
                 if (matrixClient != null && roomId != null) {
                     // Online mode: send to Matrix, await crew response, speak it
-                    _state.value = PipelineState.Processing("Sending")
-                    withContext(ioDispatcher) { matrixClient.sendMessage(roomId, text) }
-
-                    _state.value = PipelineState.Processing("Waiting for crew")
                     awaitingResponse = true
-                    val response: CrewMessage = try {
-                        withTimeout(responseTimeoutMs) { awaitFinalResponse() }
-                    } catch (e: TimeoutCancellationException) {
-                        throw PipelineTimeoutException(e)
+                    val response: CrewMessage
+                    try {
+                        _state.value = PipelineState.Processing("Sending")
+                        withContext(ioDispatcher) { matrixClient.sendMessage(roomId, text) }
+
+                        _state.value = PipelineState.Processing("Waiting for crew")
+                        response = try {
+                            withTimeout(responseTimeoutMs) { awaitFinalResponse() }
+                        } catch (e: TimeoutCancellationException) {
+                            throw PipelineTimeoutException(e)
+                        }
                     } finally {
                         awaitingResponse = false
                     }
@@ -180,6 +183,8 @@ class MainViewModel(
      * Handles delegation chains where multiple crew members respond sequentially.
      */
     private suspend fun awaitFinalResponse(): CrewMessage {
+        // Drain any messages buffered between awaitingResponse=true and now
+        while (crewMessages.tryReceive().isSuccess) { /* drain */ }
         var latest = crewMessages.receive() // block until first message
         while (true) {
             val next = withTimeoutOrNull(DELEGATION_SETTLE_MS) {
