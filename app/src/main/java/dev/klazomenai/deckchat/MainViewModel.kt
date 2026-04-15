@@ -52,6 +52,8 @@ class MainViewModel(
 
     @VisibleForTesting
     internal val crewMessages = Channel<CrewMessage>(Channel.UNLIMITED)
+    @Volatile
+    private var awaitingResponse = false
 
     init {
         viewModelScope.launch {
@@ -103,7 +105,7 @@ class MainViewModel(
 
                     Log.d(TAG, "Session restored, starting sync")
                     matrixClient.startSync { crewMessage ->
-                        crewMessages.trySend(crewMessage)
+                        if (awaitingResponse) crewMessages.trySend(crewMessage)
                     }
 
                     Log.d(TAG, "Sync started, listening to room")
@@ -142,17 +144,17 @@ class MainViewModel(
 
                 if (matrixClient != null && roomId != null) {
                     // Online mode: send to Matrix, await crew response, speak it
-                    // Drain stale messages from previous interactions
-                    while (crewMessages.tryReceive().isSuccess) { /* drain */ }
-
                     _state.value = PipelineState.Processing("Sending")
                     withContext(ioDispatcher) { matrixClient.sendMessage(roomId, text) }
 
                     _state.value = PipelineState.Processing("Waiting for crew")
+                    awaitingResponse = true
                     val response: CrewMessage = try {
                         withTimeout(responseTimeoutMs) { awaitFinalResponse() }
                     } catch (e: TimeoutCancellationException) {
                         throw PipelineTimeoutException(e)
+                    } finally {
+                        awaitingResponse = false
                     }
 
                     _lastCrewResponse.value = response
