@@ -229,7 +229,7 @@ class SecureStorage(
         private const val KEY_RESPONSE_TIMEOUT_SEC = "response_timeout_sec"
         private const val KEY_DEBUG_MODE = "debug_mode"
         const val DEFAULT_RESPONSE_TIMEOUT_SEC = 60
-        const val MIN_RESPONSE_TIMEOUT_SEC = 5
+        const val MIN_RESPONSE_TIMEOUT_SEC = 15
         const val MAX_RESPONSE_TIMEOUT_SEC = 300
     }
 }
