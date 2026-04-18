@@ -69,9 +69,14 @@ class MockMatrixClient(
         onMessageCallback?.invoke(crewMessage)
     }
 
-    /** Simulate a UTD event surfacing via the Matrix client. */
+    /** Simulate a UTD event surfacing via the Matrix client. Mirrors the
+     *  production cap so the mock honours the interface contract. */
     fun simulateUtd(event: UtdEvent) {
-        _utdEvents.value = _utdEvents.value + event
+        _utdEvents.value = (_utdEvents.value + event).takeLast(MAX_UTD_EVENTS)
+    }
+
+    companion object {
+        private const val MAX_UTD_EVENTS = 20
     }
 }
 
