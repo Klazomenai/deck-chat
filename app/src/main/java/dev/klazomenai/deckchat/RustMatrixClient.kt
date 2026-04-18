@@ -9,6 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import uniffi.matrix_sdk.BackupDownloadStrategy
 import org.matrix.rustcomponents.sdk.Client
 import org.matrix.rustcomponents.sdk.ClientBuilder
 import org.matrix.rustcomponents.sdk.MessageType
@@ -22,6 +23,8 @@ import org.matrix.rustcomponents.sdk.TimelineDiff
 import org.matrix.rustcomponents.sdk.TimelineItem
 import org.matrix.rustcomponents.sdk.TimelineItemContent
 import org.matrix.rustcomponents.sdk.TimelineListener
+import org.matrix.rustcomponents.sdk.UnableToDecryptDelegate
+import org.matrix.rustcomponents.sdk.UnableToDecryptInfo
 import java.io.File
 
 /**
@@ -50,6 +53,7 @@ class RustMatrixClient(
     override suspend fun login(homeserverUrl: String, username: String, password: String) {
         val client = buildClient(homeserverUrl)
         client.login(username, password, "DeckChat Android", null)
+        client.encryption().waitForE2eeInitializationTasks()
 
         val session = client.session()
         persistSession(session)
@@ -65,6 +69,7 @@ class RustMatrixClient(
             ?: throw IllegalStateException("No session stored")
 
         client.restoreSession(session)
+        client.encryption().waitForE2eeInitializationTasks()
         this.client = client
     }
 
@@ -170,13 +175,22 @@ class RustMatrixClient(
         val dataDir = File(context.filesDir, "matrix-data").apply { mkdirs() }
         val cacheDir = File(context.cacheDir, "matrix-cache").apply { mkdirs() }
 
-        // SDK manages SQLite store encryption internally via sessionPaths.
-        // No explicit passphrase method exists on ClientBuilder.
-        return ClientBuilder()
+        val client = ClientBuilder()
             .homeserverUrl(homeserverUrl)
             .slidingSyncVersionBuilder(SlidingSyncVersionBuilder.DISCOVER_NATIVE)
             .sessionPaths(dataDir.absolutePath, cacheDir.absolutePath)
+            .autoEnableBackups(true)
+            .autoEnableCrossSigning(true)
+            .backupDownloadStrategy(BackupDownloadStrategy.AFTER_DECRYPTION_FAILURE)
             .build()
+
+        client.setUtdDelegate(object : UnableToDecryptDelegate {
+            override fun onUtd(info: UnableToDecryptInfo) {
+                Log.w(TAG, "UTD: event=${info.eventId} cause=${info.cause}")
+            }
+        })
+
+        return client
     }
 
     private fun persistSession(session: Session) {
@@ -225,6 +239,10 @@ class RustMatrixClient(
         val content = event.content
         if (content !is TimelineItemContent.MsgLike) return
         val kind = content.content.kind
+        if (kind is MsgLikeKind.UnableToDecrypt) {
+            Log.w(TAG, "UTD: message from ${event.sender} could not be decrypted")
+            return
+        }
         if (kind !is MsgLikeKind.Message) return
         val msgType = kind.content.msgType
         if (msgType !is MessageType.Text) return
