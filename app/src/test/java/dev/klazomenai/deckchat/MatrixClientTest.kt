@@ -1,5 +1,8 @@
 package dev.klazomenai.deckchat
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,9 +61,17 @@ class MockMatrixClient(
 
     override fun isLoggedIn(): Boolean = loggedIn
 
+    private val _utdEvents = MutableStateFlow<List<UtdEvent>>(emptyList())
+    override val utdEvents: StateFlow<List<UtdEvent>> = _utdEvents.asStateFlow()
+
     /** Simulate receiving a message (for testing downstream handlers) */
     fun simulateMessage(crewMessage: CrewMessage) {
         onMessageCallback?.invoke(crewMessage)
+    }
+
+    /** Simulate a UTD event surfacing via the Matrix client. */
+    fun simulateUtd(event: UtdEvent) {
+        _utdEvents.value = _utdEvents.value + event
     }
 }
 

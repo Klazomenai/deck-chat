@@ -7,11 +7,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import uniffi.matrix_sdk.BackupDownloadStrategy
 import org.matrix.rustcomponents.sdk.Client
 import org.matrix.rustcomponents.sdk.ClientBuilder
+import org.matrix.rustcomponents.sdk.EventOrTransactionId
 import org.matrix.rustcomponents.sdk.MessageType
 import org.matrix.rustcomponents.sdk.MsgLikeKind
 import org.matrix.rustcomponents.sdk.Session
@@ -49,6 +54,9 @@ class RustMatrixClient(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile
     private var onSyncStatusCallback: ((String) -> Unit)? = null
+
+    private val _utdEvents = MutableStateFlow<List<UtdEvent>>(emptyList())
+    override val utdEvents: StateFlow<List<UtdEvent>> = _utdEvents.asStateFlow()
 
     override suspend fun login(homeserverUrl: String, username: String, password: String) {
         val client = buildClient(homeserverUrl)
@@ -187,6 +195,7 @@ class RustMatrixClient(
         client.setUtdDelegate(object : UnableToDecryptDelegate {
             override fun onUtd(info: UnableToDecryptInfo) {
                 Log.w(TAG, "UTD: event=${info.eventId} cause=${info.cause}")
+                recordUtd(info.eventId, sender = null, cause = info.cause.toString())
             }
         })
 
@@ -241,6 +250,8 @@ class RustMatrixClient(
         val kind = content.content.kind
         if (kind is MsgLikeKind.UnableToDecrypt) {
             Log.w(TAG, "UTD: message from ${event.sender} could not be decrypted")
+            val eventId = (event.eventOrTransactionId as? EventOrTransactionId.EventId)?.eventId ?: "?"
+            recordUtd(eventId, sender = event.sender, cause = "timeline-drop")
             return
         }
         if (kind !is MsgLikeKind.Message) return
@@ -252,9 +263,22 @@ class RustMatrixClient(
         onMessageCallback?.invoke(crewMessage)
     }
 
+    private fun recordUtd(eventId: String, sender: String?, cause: String) {
+        val event = UtdEvent(
+            eventId = eventId,
+            sender = sender,
+            cause = cause,
+            timestampMs = System.currentTimeMillis(),
+        )
+        _utdEvents.update { existing ->
+            (existing + event).takeLast(MAX_UTD_EVENTS)
+        }
+    }
+
     companion object {
         private const val TAG = "DeckChat.MatrixClient"
         private const val ROOM_SYNC_TIMEOUT_MS = 30_000L
         private const val ROOM_SYNC_POLL_MS = 250L
+        private const val MAX_UTD_EVENTS = 20
     }
 }

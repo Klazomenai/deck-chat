@@ -19,6 +19,8 @@
     <string name="debug_timing_bridge">Bridge: %1$s</string>
     <string name="debug_timing_tts">TTS: %1$s</string>
     <string name="debug_timing_total">Total: %1$s</string>
+    <string name="debug_utd">UTD: %1$s %2$s (%3$s)</string>
+    <string name="debug_utd_unknown_sender">?</string>
 
     <string name="session_heading">Matrix Session</string>
     <string name="session_active">Logged in as %1$s</string>
