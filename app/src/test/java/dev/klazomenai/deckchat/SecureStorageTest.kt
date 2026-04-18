@@ -193,6 +193,21 @@ class SecureStorageTest {
     }
 
     @Test
+    fun `showTimings defaults to false`() {
+        val storage = createStorage()
+        assertFalse(storage.showTimings)
+    }
+
+    @Test
+    fun `showTimings round-trips`() {
+        val storage = createStorage()
+        storage.showTimings = true
+        assertTrue(storage.showTimings)
+        storage.showTimings = false
+        assertFalse(storage.showTimings)
+    }
+
+    @Test
     fun `responseTimeoutSec getter clamps out-of-range stored value to minimum`() {
         val storage = createStorage()
         // Write an out-of-range value directly to prefs (simulates corruption or upgrade)

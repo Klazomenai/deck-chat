@@ -46,8 +46,13 @@ class MainActivity : AppCompatActivity() {
     private var currentIndicatorColor: Int = 0
     private var colorAnimator: ValueAnimator? = null
     private var debugMode = false
+    private var showTimings = false
     private lateinit var debugUserText: TextView
     private lateinit var debugCrewText: TextView
+    private lateinit var debugTimingStt: TextView
+    private lateinit var debugTimingBridge: TextView
+    private lateinit var debugTimingTts: TextView
+    private lateinit var debugTimingTotal: TextView
 
     private val requestAudioPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -77,10 +82,15 @@ class MainActivity : AppCompatActivity() {
         val stateIndicator = findViewById<View>(R.id.state_indicator)
         debugUserText = findViewById(R.id.debug_user_text)
         debugCrewText = findViewById(R.id.debug_crew_text)
+        debugTimingStt = findViewById(R.id.debug_timing_stt)
+        debugTimingBridge = findViewById(R.id.debug_timing_bridge)
+        debugTimingTts = findViewById(R.id.debug_timing_tts)
+        debugTimingTotal = findViewById(R.id.debug_timing_total)
         val settingsFab = findViewById<FloatingActionButton>(R.id.settings_fab)
         val pttFab = findViewById<FloatingActionButton>(R.id.ptt_fab)
 
         debugMode = storage.debugMode
+        showTimings = storage.showTimings
 
         settingsFab.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -116,7 +126,7 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(viewModel.lastUserText, viewModel.lastCrewResponse) { _, _ -> }
+                combine(viewModel.lastUserText, viewModel.lastCrewResponse, viewModel.lastTimings) { _, _, _ -> }
                     .collect { updateTranscript() }
             }
         }
@@ -125,17 +135,33 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         debugMode = storage.debugMode
+        showTimings = storage.showTimings
         updateTranscript()
     }
 
     private fun updateTranscript() {
         val userText = viewModel.lastUserText.value
         val crewMsg = viewModel.lastCrewResponse.value
+        val timings = viewModel.lastTimings.value
+        val timingsVisible = debugMode && showTimings && timings != null
+
         if (debugMode && userText != null) {
             debugUserText.text = getString(R.string.debug_transcript_you, userText)
             debugUserText.visibility = View.VISIBLE
         } else {
             debugUserText.visibility = View.GONE
+        }
+        if (timingsVisible && userText != null) {
+            debugTimingStt.text = getString(R.string.debug_timing_stt, formatDuration(timings!!.sttMs))
+            debugTimingStt.visibility = View.VISIBLE
+        } else {
+            debugTimingStt.visibility = View.GONE
+        }
+        if (timingsVisible && timings!!.bridgeMs != null) {
+            debugTimingBridge.text = getString(R.string.debug_timing_bridge, formatDuration(timings.bridgeMs))
+            debugTimingBridge.visibility = View.VISIBLE
+        } else {
+            debugTimingBridge.visibility = View.GONE
         }
         if (debugMode && crewMsg != null && userText != null) {
             val name = CrewRegistry.lookup(crewMsg.crewName).displayName
@@ -144,7 +170,19 @@ class MainActivity : AppCompatActivity() {
         } else {
             debugCrewText.visibility = View.GONE
         }
+        if (timingsVisible) {
+            debugTimingTts.text = getString(R.string.debug_timing_tts, formatDuration(timings!!.ttsMs))
+            debugTimingTts.visibility = View.VISIBLE
+            debugTimingTotal.text = getString(R.string.debug_timing_total, formatDuration(timings.totalMs))
+            debugTimingTotal.visibility = View.VISIBLE
+        } else {
+            debugTimingTts.visibility = View.GONE
+            debugTimingTotal.visibility = View.GONE
+        }
     }
+
+    private fun formatDuration(ms: Long): String =
+        String.format(java.util.Locale.ROOT, "%.1fs", ms / 1000.0)
 
     /**
      * Called by UI controls (FAB, headset) to initiate recording.

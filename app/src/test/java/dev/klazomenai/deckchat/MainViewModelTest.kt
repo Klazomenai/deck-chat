@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -320,6 +321,57 @@ class MainViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertNull(viewModel.lastUserText.value)
+    }
+
+    // --- Pipeline timings ---
+
+    @Test
+    fun `lastTimings defaults to null`() {
+        val viewModel = createViewModel()
+        assertNull(viewModel.lastTimings.value)
+    }
+
+    @Test
+    fun `recording started clears timings`() = runTest {
+        val viewModel = createViewModel(sttResult = "hello")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Run pipeline to set timings (local echo)
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertNotNull(viewModel.lastTimings.value)
+
+        // New recording should clear
+        RecordingService.emitEvent(ServiceEvent.RecordingStarted)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertNull(viewModel.lastTimings.value)
+    }
+
+    @Test
+    fun `local echo pipeline sets stt and tts timings with null bridge`() = runTest {
+        val viewModel = createViewModel(sttResult = "hello")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val timings = viewModel.lastTimings.value
+        assertNotNull(timings)
+        assertTrue(timings!!.sttMs >= 0)
+        assertNull(timings.bridgeMs)
+        assertTrue(timings.ttsMs >= 0)
+        assertTrue(timings.totalMs >= 0)
+    }
+
+    @Test
+    fun `blank STT does not set timings`() = runTest {
+        val viewModel = createViewModel(sttResult = "")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.lastTimings.value)
     }
 
     // --- Delegation settling ---

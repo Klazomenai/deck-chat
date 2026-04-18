@@ -50,6 +50,9 @@ class MainViewModel(
     private val _lastCrewResponse = MutableStateFlow<CrewMessage?>(null)
     val lastCrewResponse: StateFlow<CrewMessage?> = _lastCrewResponse.asStateFlow()
 
+    private val _lastTimings = MutableStateFlow<PipelineTimings?>(null)
+    val lastTimings: StateFlow<PipelineTimings?> = _lastTimings.asStateFlow()
+
     @VisibleForTesting
     internal val crewMessages = Channel<CrewMessage>(Channel.UNLIMITED)
     @Volatile
@@ -63,6 +66,7 @@ class MainViewModel(
                         _recordingDurationMs.value = 0L
                         _lastUserText.value = null
                         _lastCrewResponse.value = null
+                        _lastTimings.value = null
                         _state.value = PipelineState.Recording
                     }
                     is ServiceEvent.RecordingProgress -> {
@@ -131,8 +135,10 @@ class MainViewModel(
         viewModelScope.launch {
             try {
                 // STT
+                val sttStart = System.nanoTime()
                 val audioFile = audioFileProvider()
                 val text = sttEngine.transcribe(audioFile)
+                val sttMs = (System.nanoTime() - sttStart) / 1_000_000
 
                 if (text.isBlank()) {
                     _state.value = PipelineState.Idle
@@ -148,6 +154,7 @@ class MainViewModel(
                     while (crewMessages.tryReceive().isSuccess) { /* drain */ }
                     awaitingResponse = true
                     val response: CrewMessage
+                    val bridgeStart = System.nanoTime()
                     try {
                         _state.value = PipelineState.Processing("Sending")
                         withContext(ioDispatcher) { matrixClient.sendMessage(roomId, text) }
@@ -161,16 +168,25 @@ class MainViewModel(
                     } finally {
                         awaitingResponse = false
                     }
+                    val bridgeMs = (System.nanoTime() - bridgeStart) / 1_000_000
 
                     _lastCrewResponse.value = response
                     val displayName = CrewRegistry.lookup(response.crewName).displayName
                     _state.value = PipelineState.Speaking(displayName)
+                    val ttsStart = System.nanoTime()
                     ttsEngine.speak(response.crewName, response.body)
+                    val ttsMs = (System.nanoTime() - ttsStart) / 1_000_000
+
+                    _lastTimings.value = PipelineTimings(sttMs, bridgeMs, ttsMs)
                 } else {
                     // Local echo: TTS reads back transcription with default crew
                     val displayName = CrewRegistry.lookup(defaultCrew).displayName
                     _state.value = PipelineState.Speaking(displayName)
+                    val ttsStart = System.nanoTime()
                     ttsEngine.speak(defaultCrew, text)
+                    val ttsMs = (System.nanoTime() - ttsStart) / 1_000_000
+
+                    _lastTimings.value = PipelineTimings(sttMs, null, ttsMs)
                 }
 
                 _state.value = PipelineState.Idle
@@ -291,6 +307,15 @@ class MainViewModel(
         internal const val DEFAULT_CREW = "maren"
         internal const val DELEGATION_SETTLE_MS = 5_000L
     }
+}
+
+/** Pipeline stage durations in milliseconds. [bridgeMs] is null in local echo mode. */
+data class PipelineTimings(
+    val sttMs: Long,
+    val bridgeMs: Long?,
+    val ttsMs: Long,
+) {
+    val totalMs: Long get() = sttMs + (bridgeMs ?: 0) + ttsMs
 }
 
 /** Sentinel exception for response timeout — classified as [PipelineError.ResponseTimeout]. */

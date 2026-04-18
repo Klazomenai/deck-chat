@@ -81,6 +81,11 @@ class SecureStorage(
         get() = prefs.getBoolean(KEY_DEBUG_MODE, false)
         set(value) = prefs.edit().putBoolean(KEY_DEBUG_MODE, value).apply()
 
+    /** Show pipeline timings inline with debug transcript. Requires debugMode. */
+    var showTimings: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_TIMINGS, false)
+        set(value) = prefs.edit().putBoolean(KEY_SHOW_TIMINGS, value).apply()
+
     /** Response timeout in seconds. Default 60s — covers crew delegation chains. */
     var responseTimeoutSec: Int
         get() = prefs.getInt(KEY_RESPONSE_TIMEOUT_SEC, DEFAULT_RESPONSE_TIMEOUT_SEC)
@@ -227,6 +232,7 @@ class SecureStorage(
         private const val KEY_SQLITE_PASSPHRASE = "sqlite_passphrase"
         private const val KEY_RESPONSE_TIMEOUT_SEC = "response_timeout_sec"
         private const val KEY_DEBUG_MODE = "debug_mode"
+        private const val KEY_SHOW_TIMINGS = "show_timings"
         const val DEFAULT_RESPONSE_TIMEOUT_SEC = 60
         const val MIN_RESPONSE_TIMEOUT_SEC = 15
         const val MAX_RESPONSE_TIMEOUT_SEC = 300
