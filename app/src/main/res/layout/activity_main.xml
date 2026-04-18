@@ -59,6 +59,30 @@
             android:paddingStart="24dp"
             android:paddingEnd="24dp" />
 
+        <!-- Debug timing: STT duration -->
+        <TextView
+            android:id="@+id/debug_timing_stt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:visibility="gone"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp" />
+
+        <!-- Debug timing: bridge duration -->
+        <TextView
+            android:id="@+id/debug_timing_bridge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:visibility="gone"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp" />
+
         <!-- Debug transcript: last crew response -->
         <TextView
             android:id="@+id/debug_crew_text"
@@ -70,6 +94,31 @@
             android:visibility="gone"
             android:maxLines="5"
             android:ellipsize="end"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp" />
+
+        <!-- Debug timing: TTS duration -->
+        <TextView
+            android:id="@+id/debug_timing_tts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:visibility="gone"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp" />
+
+        <!-- Debug timing: total duration -->
+        <TextView
+            android:id="@+id/debug_timing_total"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textStyle="bold"
+            android:visibility="gone"
             android:paddingStart="24dp"
             android:paddingEnd="24dp" />
 

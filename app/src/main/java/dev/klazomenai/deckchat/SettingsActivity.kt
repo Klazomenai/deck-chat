@@ -29,6 +29,7 @@ class SettingsActivity : AppCompatActivity() {
         val roomIdInput = findViewById<EditText>(R.id.room_id_input)
         val timeoutInput = findViewById<EditText>(R.id.response_timeout_input)
         val debugSwitch = findViewById<SwitchMaterial>(R.id.debug_mode_switch)
+        val timingsSwitch = findViewById<SwitchMaterial>(R.id.show_timings_switch)
         val statusText = findViewById<TextView>(R.id.session_status)
         val saveButton = findViewById<Button>(R.id.save_button)
         val clearButton = findViewById<Button>(R.id.clear_session_button)
@@ -38,6 +39,7 @@ class SettingsActivity : AppCompatActivity() {
         roomIdInput.setText(storage.roomId ?: "")
         timeoutInput.setText(storage.responseTimeoutSec.toString())
         debugSwitch.isChecked = storage.debugMode
+        timingsSwitch.isChecked = storage.showTimings
         updateSessionStatus(statusText)
 
         saveButton.setOnClickListener {
@@ -69,6 +71,7 @@ class SettingsActivity : AppCompatActivity() {
             storage.roomId = roomId.ifEmpty { null }
             storage.responseTimeoutSec = timeoutSec
             storage.debugMode = debugSwitch.isChecked
+            storage.showTimings = timingsSwitch.isChecked
 
             updateSessionStatus(statusText)
             Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()

@@ -69,6 +69,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/debug_mode_label"
+        android:layout_marginBottom="8dp" />
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/show_timings_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/show_timings_label"
         android:layout_marginBottom="16dp" />
 
     <Button
