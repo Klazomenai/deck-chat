@@ -142,8 +142,8 @@ class MainActivity : AppCompatActivity() {
     private fun updateTranscript() {
         val userText = viewModel.lastUserText.value
         val crewMsg = viewModel.lastCrewResponse.value
-        val timings = viewModel.lastTimings.value
-        val timingsVisible = debugMode && showTimings && timings != null
+        val t = viewModel.lastTimings.value
+        val timingsVisible = debugMode && showTimings && t != null
 
         if (debugMode && userText != null) {
             debugUserText.text = getString(R.string.debug_transcript_you, userText)
@@ -152,13 +152,14 @@ class MainActivity : AppCompatActivity() {
             debugUserText.visibility = View.GONE
         }
         if (timingsVisible && userText != null) {
-            debugTimingStt.text = getString(R.string.debug_timing_stt, formatDuration(timings!!.sttMs))
+            debugTimingStt.text = getString(R.string.debug_timing_stt, formatDuration(t!!.sttMs))
             debugTimingStt.visibility = View.VISIBLE
         } else {
             debugTimingStt.visibility = View.GONE
         }
-        if (timingsVisible && timings!!.bridgeMs != null) {
-            debugTimingBridge.text = getString(R.string.debug_timing_bridge, formatDuration(timings.bridgeMs))
+        val bridgeMs = t?.bridgeMs
+        if (timingsVisible && bridgeMs != null) {
+            debugTimingBridge.text = getString(R.string.debug_timing_bridge, formatDuration(bridgeMs))
             debugTimingBridge.visibility = View.VISIBLE
         } else {
             debugTimingBridge.visibility = View.GONE
@@ -171,9 +172,9 @@ class MainActivity : AppCompatActivity() {
             debugCrewText.visibility = View.GONE
         }
         if (timingsVisible) {
-            debugTimingTts.text = getString(R.string.debug_timing_tts, formatDuration(timings!!.ttsMs))
+            debugTimingTts.text = getString(R.string.debug_timing_tts, formatDuration(t!!.ttsMs))
             debugTimingTts.visibility = View.VISIBLE
-            debugTimingTotal.text = getString(R.string.debug_timing_total, formatDuration(timings.totalMs))
+            debugTimingTotal.text = getString(R.string.debug_timing_total, formatDuration(t.totalMs))
             debugTimingTotal.visibility = View.VISIBLE
         } else {
             debugTimingTts.visibility = View.GONE
