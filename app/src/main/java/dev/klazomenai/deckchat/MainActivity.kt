@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var debugTimingBridge: TextView
     private lateinit var debugTimingTts: TextView
     private lateinit var debugTimingTotal: TextView
+    private lateinit var debugUtdText: TextView
 
     private val requestAudioPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -86,6 +87,7 @@ class MainActivity : AppCompatActivity() {
         debugTimingBridge = findViewById(R.id.debug_timing_bridge)
         debugTimingTts = findViewById(R.id.debug_timing_tts)
         debugTimingTotal = findViewById(R.id.debug_timing_total)
+        debugUtdText = findViewById(R.id.debug_utd_text)
         val settingsFab = findViewById<FloatingActionButton>(R.id.settings_fab)
         val pttFab = findViewById<FloatingActionButton>(R.id.ptt_fab)
 
@@ -126,7 +128,7 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(viewModel.lastUserText, viewModel.lastCrewResponse, viewModel.lastTimings) { _, _, _ -> }
+                combine(viewModel.lastUserText, viewModel.lastCrewResponse, viewModel.lastTimings, viewModel.lastUtd) { _, _, _, _ -> }
                     .collect { updateTranscript() }
             }
         }
@@ -179,6 +181,15 @@ class MainActivity : AppCompatActivity() {
         } else {
             debugTimingTts.visibility = View.GONE
             debugTimingTotal.visibility = View.GONE
+        }
+        val utd = viewModel.lastUtd.value
+        if (debugMode && utd != null) {
+            val sender = utd.sender ?: getString(R.string.debug_utd_unknown_sender)
+            val shortId = utd.eventId.take(UTD_EVENT_ID_DISPLAY_LEN)
+            debugUtdText.text = getString(R.string.debug_utd, sender, shortId, utd.cause)
+            debugUtdText.visibility = View.VISIBLE
+        } else {
+            debugUtdText.visibility = View.GONE
         }
     }
 
@@ -352,6 +363,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val CROSSFADE_DURATION_MS = 300L
         private const val COLOR_FADE_DURATION_MS = 400L
+        private const val UTD_EVENT_ID_DISPLAY_LEN = 12
     }
 
     private fun updatePttFab(state: PipelineState, fab: FloatingActionButton) {

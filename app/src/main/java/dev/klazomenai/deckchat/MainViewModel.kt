@@ -11,8 +11,11 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -52,6 +55,16 @@ class MainViewModel(
 
     private val _lastTimings = MutableStateFlow<PipelineTimings?>(null)
     val lastTimings: StateFlow<PipelineTimings?> = _lastTimings.asStateFlow()
+
+    /**
+     * Most recent undecryptable event from the Matrix client, or null if none.
+     * Surfaced in the debug transcript to diagnose E2EE key issues (see #167).
+     */
+    val lastUtd: StateFlow<UtdEvent?> =
+        matrixClient?.utdEvents
+            ?.map { it.lastOrNull() }
+            ?.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+            ?: MutableStateFlow(null).asStateFlow()
 
     @VisibleForTesting
     internal val crewMessages = Channel<CrewMessage>(Channel.UNLIMITED)

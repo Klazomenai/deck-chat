@@ -374,6 +374,55 @@ class MainViewModelTest {
         assertNull(viewModel.lastTimings.value)
     }
 
+    // --- UTD surface (#167) ---
+
+    @Test
+    fun `lastUtd defaults to null when no matrix client`() {
+        val viewModel = createViewModel()
+        assertNull(viewModel.lastUtd.value)
+    }
+
+    @Test
+    fun `lastUtd defaults to null with matrix client and no events`() = runTest {
+        val client = MockMatrixClient()
+        val viewModel = createViewModel(matrixClient = client, roomId = "!room:example.com")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertNull(viewModel.lastUtd.value)
+    }
+
+    @Test
+    fun `lastUtd updates when matrix client emits UTD event`() = runTest {
+        val client = MockMatrixClient()
+        val viewModel = createViewModel(matrixClient = client, roomId = "!room:example.com")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val event = UtdEvent(
+            eventId = "\$abc123",
+            sender = "@bot:example.com",
+            cause = "UNKNOWN_DEVICE",
+            timestampMs = 1_700_000_000_000L,
+        )
+        client.simulateUtd(event)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(event, viewModel.lastUtd.value)
+    }
+
+    @Test
+    fun `lastUtd reflects most recent UTD when multiple emitted`() = runTest {
+        val client = MockMatrixClient()
+        val viewModel = createViewModel(matrixClient = client, roomId = "!room:example.com")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val first = UtdEvent("\$a", "@a:example.com", "UNKNOWN_DEVICE", 1L)
+        val second = UtdEvent("\$b", "@b:example.com", "WITHHELD_BY_SENDER", 2L)
+        client.simulateUtd(first)
+        client.simulateUtd(second)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(second, viewModel.lastUtd.value)
+    }
+
     // --- Delegation settling ---
 
     private fun createOnlineViewModel(

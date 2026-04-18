@@ -1,5 +1,7 @@
 package dev.klazomenai.deckchat
 
+import kotlinx.coroutines.flow.StateFlow
+
 /**
  * Matrix client abstraction for E2EE messaging.
  *
@@ -27,7 +29,26 @@ interface MatrixClient {
     /** Stops syncing. Does NOT clear the session or log out. */
     suspend fun stop()
     fun isLoggedIn(): Boolean
+
+    /**
+     * Recent undecryptable events, newest last. Bounded to the most recent entries.
+     * Surfaced via the debug transcript (issue #167) for diagnosing key backup /
+     * cross-signing issues without needing `adb logcat`.
+     */
+    val utdEvents: StateFlow<List<UtdEvent>>
 }
+
+/**
+ * A single UTD (unable-to-decrypt) observation. `sender` is only populated when the
+ * event surfaces via the room timeline — the SDK's global UTD delegate does not
+ * expose it directly.
+ */
+data class UtdEvent(
+    val eventId: String,
+    val sender: String?,
+    val cause: String,
+    val timestampMs: Long,
+)
 
 /**
  * Parsed crew response from a Matrix message body prefix.
