@@ -36,6 +36,7 @@ in
     pkgs.curl
     pkgs.gnutar
     pkgs.bzip2
+    pkgs.actionlint
   ];
 
   env = {
@@ -167,6 +168,7 @@ in
     echo "  download-models            — Download STT + TTS model files"
     echo "  wrapper                    — Regenerate Gradle wrapper (9.4.0)"
     echo "  check-gms                  — Audit for Google Play Services deps"
+    echo "  actionlint                 — Lint .github/workflows/*.yml"
     echo ""
     if [ -e /dev/kvm ] && [ ! -w /dev/kvm ]; then
       echo "⚠  /dev/kvm not accessible — emulator will be slow without KVM."
