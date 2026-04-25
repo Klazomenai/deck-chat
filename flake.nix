@@ -37,6 +37,8 @@
               pkgs.jdk17
               pkgs.gradle
               androidComposition.androidsdk
+              pkgs.actionlint
+              pkgs.shellcheck
             ];
 
             # Set Android SDK paths as shell environment variables.
