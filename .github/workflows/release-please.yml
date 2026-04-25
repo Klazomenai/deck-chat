@@ -82,9 +82,11 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Signed APK Published" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Version:** \`${{ needs.release-please.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Tag:** \`${{ needs.release-please.outputs.tag_name }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Download: [deck-chat-${{ needs.release-please.outputs.version }}.apk](https://github.com/${{ github.repository }}/releases/download/${{ needs.release-please.outputs.tag_name }}/deck-chat-${{ needs.release-please.outputs.version }}.apk)" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Signed APK Published"
+            echo ""
+            echo "**Version:** \`${{ needs.release-please.outputs.version }}\`"
+            echo "**Tag:** \`${{ needs.release-please.outputs.tag_name }}\`"
+            echo ""
+            echo "Download: [deck-chat-${{ needs.release-please.outputs.version }}.apk](https://github.com/${{ github.repository }}/releases/download/${{ needs.release-please.outputs.tag_name }}/deck-chat-${{ needs.release-please.outputs.version }}.apk)"
+          } >> "$GITHUB_STEP_SUMMARY"
