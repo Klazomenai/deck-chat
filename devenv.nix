@@ -37,6 +37,7 @@ in
     pkgs.gnutar
     pkgs.bzip2
     pkgs.actionlint
+    pkgs.shellcheck
   ];
 
   env = {
