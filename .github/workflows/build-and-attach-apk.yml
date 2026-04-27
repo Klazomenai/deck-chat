@@ -1,0 +1,146 @@
+name: Build and Attach Signed APK (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Git tag for the release (with v prefix, e.g. v0.1.0-alpha.7)'
+        required: true
+        type: string
+      version:
+        description: 'Semver version string without leading v (e.g. 0.1.0-alpha.7)'
+        required: true
+        type: string
+    secrets:
+      RELEASE_KEYSTORE_BASE64:
+        required: true
+      RELEASE_KEYSTORE_PASSWORD:
+        required: true
+      RELEASE_KEY_ALIAS:
+        required: true
+      RELEASE_KEY_PASSWORD:
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build and Attach Signed APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate release inputs
+        id: validate_tag
+        env:
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          # Match exactly the regex enforced by computeVersionCode in
+          # app/build.gradle.kts so any input that would later fail the
+          # Gradle build fails here first with a clear message.
+          version_regex='^[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+(\.[0-9]+)?)?$'
+          if [[ ! "$VERSION" =~ $version_regex ]]; then
+            echo "Invalid version format: '$VERSION'. Expected <major>.<minor>.<patch>, optionally followed by -<label> or -<label>.<number> with lowercase labels." >&2
+            exit 1
+          fi
+          if [[ ! "$TAG" =~ ^v${version_regex#^} ]]; then
+            echo "Invalid tag format: '$TAG'. Expected v<version> matching ${version_regex}." >&2
+            exit 1
+          fi
+          if [[ "$TAG" != "v$VERSION" ]]; then
+            echo "Tag/version mismatch: tag '$TAG' must equal 'v$VERSION'." >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout code at tag
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.validate_tag.outputs.tag }}
+
+      - uses: DeterminateSystems/nix-installer-action@v14
+
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Decode keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+
+      - name: Download STT models
+        run: nix develop --command bash scripts/download-stt-models.sh
+
+      - name: Download TTS models
+        run: nix develop --command bash scripts/download-tts-models.sh
+
+      - name: Build release APK
+        env:
+          RELEASE_KEYSTORE_FILE: ${{ runner.temp }}/release.keystore
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: nix develop --command ./gradlew assembleRelease
+
+      - name: Rename APK
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          mv "app/build/outputs/apk/release/app-release.apk" \
+             "app/build/outputs/apk/release/deck-chat-${VERSION}.apk"
+
+      - name: Create or update GitHub Release with APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/deck-chat-${VERSION}.apk"
+          gh_response="$(gh api --include "repos/${REPO}/releases/tags/${TAG}" 2>&1)" || gh_status=$?
+          gh_status="${gh_status:-0}"
+          http_status="$(printf '%s\n' "$gh_response" | awk '/^HTTP\/[0-9.]+ [0-9]+/ { print $2; exit }')"
+
+          case "$http_status" in
+            200)
+              echo "Release $TAG exists — uploading asset (clobber)."
+              gh release upload "$TAG" "$APK" --clobber
+              ;;
+            404)
+              echo "Release $TAG missing — creating with auto-generated notes."
+              gh release create "$TAG" "$APK" \
+                --prerelease \
+                --generate-notes \
+                --title "$TAG"
+              ;;
+            *)
+              echo "::error::Unexpected response while checking Release for tag ${TAG} (HTTP ${http_status:-unknown}, gh api exit ${gh_status})."
+              printf '%s\n' "$gh_response"
+              exit 1
+              ;;
+          esac
+
+      - name: Summary
+        env:
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          {
+            echo "## Signed APK Published"
+            echo ""
+            echo "**Version:** \`${VERSION}\`"
+            echo "**Tag:** \`${TAG}\`"
+            echo ""
+            echo "Download: [deck-chat-${VERSION}.apk](https://github.com/${{ github.repository }}/releases/download/${TAG}/deck-chat-${VERSION}.apk)"
+          } >> "$GITHUB_STEP_SUMMARY"
