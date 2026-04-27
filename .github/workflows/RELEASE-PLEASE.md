@@ -174,3 +174,160 @@ Android refuses to upgrade an app if the signing key changes. This has implicati
   must be uninstalled before installing the F-Droid version.
 
 For consistent sideload testing, always use the release APK from GitHub Releases.
+
+## Recovery
+
+When a release ends up half-published — tag without Release, Release without APK,
+APK present but corrupted — the recovery path is the dedicated
+[`republish-release.yml`](republish-release.yml) workflow. This workflow rebuilds the
+signed APK from an existing tag and (re)attaches it to the GitHub Release, with safety
+guards against accidentally clobbering a good release.
+
+### Failure modes
+
+Four known patterns produce a half-published release. The integrity assertions in
+[`build-and-attach-apk.yml`](build-and-attach-apk.yml) (introduced in #170) make these
+failures visible at publish time rather than hours or days later:
+
+| Pattern | Symptom |
+|---|---|
+| **Tag exists, Release object missing** | `gh api .../releases/tags/<tag>` returns 404, but `gh api .../git/refs/tags/<tag>` succeeds. Browser shows GitHub's bare-tag fallback page (no APK download, no curated notes). The original v0.1.0-alpha.6 incident pattern. |
+| **Release exists, APK asset missing** | Release page shows source archive only — no `deck-chat-<version>.apk` in the assets list. Typically a build/upload failure mid-flight. |
+| **APK build failure** | `assembleRelease` failed in CI (disk space, network, build-system regression). Manifests as either of the two patterns above depending on whether the failure landed before or after `gh release create`. |
+| **Manual deletion / cleanup** | Someone deleted a botched Release expecting to retry, but the tag survived. Subsequent re-runs of `release-please` see the existing tag and silently no-op. Forensically opaque after the fact. |
+
+### Diagnosis
+
+Inspect the actual state with the GitHub API:
+
+```bash
+# Does the tag exist on the remote?
+gh api repos/<owner>/<repo>/git/refs/tags/<tag>
+
+# Does the Release object exist?
+gh api repos/<owner>/<repo>/releases/tags/<tag>
+
+# Which workflow runs hit the merge commit?
+gh api "repos/<owner>/<repo>/actions/runs?head_sha=<sha>"
+
+# Which step failed in which attempt? (multi-attempt runs hide failures)
+gh api repos/<owner>/<repo>/actions/runs/<id>/attempts/<n>/jobs
+```
+
+> **Important**: a release-please run that "looks successful" in the GitHub Actions UI
+> may have failed on attempt 1 and silently no-op'd on attempts 2+. Always enumerate
+> all attempts when diagnosing a release where the artefact is missing — the run summary
+> view shows only the latest attempt. The v0.1.0-alpha.6 incident hid in attempt 1 of
+> run `23957744115`; attempts 2–4 reported "success" without doing any work.
+
+### Recovery procedure
+
+The decision tree:
+
+| State | Action |
+|---|---|
+| Tag missing | **Fix the underlying issue first.** Do not republish — the upstream process never completed. Investigate the release-please workflow run and address the failure. |
+| Tag exists, Release missing | Run `republish-release.yml` with no `force`. The 404 path will fire naturally and create the Release. |
+| Release exists, APK missing | Run `republish-release.yml` with no `force`. The asset-aware guard will recognise the legitimate-recovery case and proceed without refusing. |
+| Release exists, APK present but wrong/corrupted | Run `republish-release.yml` with `force: true`. **Only when the existing APK is provably wrong** — `force` disables the safety guard. |
+
+Invocation:
+
+```bash
+gh workflow run republish-release.yml \
+  --repo <owner>/<repo> \
+  -f tag=v<version> \
+  -f version=<version>
+
+# Add `-f force=true` only when intentionally overwriting a good Release.
+```
+
+What to expect after dispatch:
+
+1. **`guard` job** runs first. Queries the Release state and decides whether to proceed
+   (404 path / Release-without-APK path) or refuse (Release-with-APK path, unless `force`).
+2. **`build-apk` job** runs the standard reusable build flow:
+   - Validates the `tag`/`version` inputs against the regex from
+     `app/build.gradle.kts`'s `computeVersionCode`
+   - Checks out `refs/tags/<tag>` (forces tag-only resolution)
+   - Builds and signs the APK
+   - Calls `gh release upload --clobber` (200 path) or `gh release create --prerelease
+     --generate-notes` (404 path)
+3. **Integrity verification** asserts four post-publish invariants. Each failure exits 1
+   with a named-field error message:
+   - Assertion 1: Release exists for the tag
+   - Assertion 2: `prerelease == true`
+   - Assertion 3: `deck-chat-<version>.apk` attached
+   - Assertion 4: asset size > 0
+
+If the workflow exits successfully, all four assertions passed and the release is
+properly published.
+
+### Don't
+
+- **Don't delete a half-broken Release before identifying the root cause.** The Release
+  object is forensic evidence — its existence (or absence) is part of the diagnostic
+  signal, and deleting it loses information. Diagnose first, recover second.
+- **Don't push a fresh tag for the same version.** Mutating tags breaks the audit trail
+  and confuses git clients that have cached the old tag. Use the existing tag and
+  republish.
+- **Don't pass `force: true` reflexively.** The safety guard refuses to overwrite an
+  existing Release-with-APK because that's almost always wrong. Use `force` only when
+  you've confirmed the existing APK is the wrong artefact and have a clear reason to
+  replace it.
+- **Don't manually upload a locally-built APK.** Local builds bypass the CI provenance
+  chain. The signing key and build environment are the same in both cases, but the
+  audit trail is not — every published artefact should be traceable to a CI workflow run.
+
+### Worked example: the v0.1.0-alpha.6 incident (2026-04-03 → 2026-04-27)
+
+The original incident is the canonical case study for this runbook. Both the failure
+and the recovery happened on the production deck-chat repository.
+
+**Failure (2026-04-03)**:
+
+| Time (UTC) | Event |
+|---|---|
+| 18:41:21 | PR #135 (`chore(main): release 0.1.0-alpha.6 🗺️`) merged to `main` at commit `b6e5c89` |
+| 18:41:23 | "Release Please" workflow run [`23957744115`](https://github.com/Klazomenai/deck-chat/actions/runs/23957744115) attempt 1 starts |
+| 18:41:30 | release-please action creates tag `v0.1.0-alpha.6` AND GitHub Release |
+| 18:45:13 | "Download STT models" step fails — `nix develop` ran out of disk while building `android-sdk-system-image-35-google_apis-x86_64`. Log line: `note: build failure may have been caused by lack of free disk space` |
+| 18:45:19 | Attempt 1 conclusion: **failure** |
+| 18:49:30 → 18:56:51 | Attempts 2, 3, 4 — release-please re-runs, sees the tag at HEAD, outputs `release_created=false`, `build-apk` skipped on each retry. All three attempts report "success" without doing any work. |
+| _later_ | The Release object was deleted manually post-incident; the tag survived. |
+
+**Reactive fix (2026-04-05)**: PR #148 (`ci: add assembleRelease to CI and trim flake
+for disk budget 🏗️`) trimmed the dev shell flake to fit the runner's disk budget. The
+underlying disk-space failure was addressed within 48 hours, but the alpha.6 republish
+itself was deferred.
+
+**Recovery (2026-04-27, tracked as #171)**: After the M1 release-pipeline-hardening chain
+(#169 reusable workflow architecture, #170 integrity assertions, #173 actionlint
+enforcement) landed, recovery became a one-line dispatch:
+
+```bash
+gh workflow run republish-release.yml \
+  --repo Klazomenai/deck-chat \
+  -f tag=v0.1.0-alpha.6 \
+  -f version=0.1.0-alpha.6
+```
+
+| Time (UTC) | Event |
+|---|---|
+| 12:30 | Run [`24995016615`](https://github.com/Klazomenai/deck-chat/actions/runs/24995016615) dispatched |
+| 12:30:xx | `guard` job: `404 path → "No existing Release for tag v0.1.0-alpha.6 — proceeding"` |
+| 12:31–12:34 | `build-apk` job: validate inputs → checkout `refs/tags/v0.1.0-alpha.6` (commit `b6e5c89`) → build → `gh release create --prerelease --generate-notes` → integrity assertions all pass |
+| 12:35:16 | Release [`v0.1.0-alpha.6`](https://github.com/Klazomenai/deck-chat/releases/tag/v0.1.0-alpha.6) published with `deck-chat-0.1.0-alpha.6.apk` (605,318,335 bytes) attached, prerelease=true |
+
+**Lessons**:
+
+1. Silent skips were invisible in the run summary view. Diagnosing the original failure
+   required enumerating attempts 1–4 individually; only attempt 1 showed the actual
+   error. **Always check all attempts when a release artefact is missing.**
+2. The integrity assertions added in #170 close this gap going forward — a future build
+   that fails the same way will exit the workflow with a named-field error rather than
+   reporting success-with-broken-output.
+3. The republish workflow's safety guards (asset-aware, fail-closed on transient API
+   errors) make recovery low-risk: an operator dispatching against the wrong tag, or
+   against a healthy Release, will be refused with a clear message rather than silently
+   clobbering.

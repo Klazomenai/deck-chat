@@ -212,6 +212,14 @@ check-gms                    # audit for Google Play Services deps (F-Droid)
     └── download-tts-models.sh           # fetch Piper voices from k2-fsa releases
 ```
 
+## Releases
+
+Releases are automated via [release-please](https://github.com/googleapis/release-please)
+and published as signed APKs attached to GitHub Releases. See
+[`.github/workflows/RELEASE-PLEASE.md`](.github/workflows/RELEASE-PLEASE.md) for the full
+release process documentation, versioning strategy, signing setup, and the **Recovery**
+runbook for situations where a release ends up half-published.
+
 ## Privacy
 
 What's said aboard stays aboard. Voice is transcribed and spoken entirely
