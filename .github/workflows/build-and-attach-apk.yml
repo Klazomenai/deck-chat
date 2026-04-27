@@ -253,7 +253,15 @@ jobs:
 
           summary_line=""
           if [ ${#summary_parts[@]} -gt 0 ]; then
-            joined=$(IFS=', '; printf '%s' "${summary_parts[*]}")
+            # Build the joined string explicitly: `${arr[*]}` with `IFS=', '` only uses
+            # the FIRST character of IFS (i.e. `,`), so the spaces would be lost.
+            joined=""
+            for part in "${summary_parts[@]}"; do
+              if [ -n "$joined" ]; then
+                joined="${joined}, "
+              fi
+              joined="${joined}${part}"
+            done
             summary_line="**This release:** ${joined}."
           fi
 
