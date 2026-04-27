@@ -40,16 +40,28 @@ jobs:
           FORCE: ${{ inputs.force }}
         run: |
           set -euo pipefail
-          if gh api "repos/${REPO}/releases/tags/${TAG}" >/dev/null 2>&1; then
-            if [ "$FORCE" = "true" ]; then
-              echo "::warning::Release for tag ${TAG} already exists; force=true → proceeding (will clobber asset)."
-            else
-              echo "::error::Release for tag ${TAG} already exists. Refusing to overwrite. Re-run with force=true to override."
+          gh_response="$(gh api --include "repos/${REPO}/releases/tags/${TAG}" 2>&1)" || gh_status=$?
+          gh_status="${gh_status:-0}"
+          http_status="$(printf '%s\n' "$gh_response" | awk '/^HTTP\/[0-9.]+ [0-9]+/ { print $2; exit }')"
+
+          case "$http_status" in
+            200)
+              if [ "$FORCE" = "true" ]; then
+                echo "::warning::Release for tag ${TAG} already exists; force=true → proceeding (will clobber asset)."
+              else
+                echo "::error::Release for tag ${TAG} already exists. Refusing to overwrite. Re-run with force=true to override."
+                exit 1
+              fi
+              ;;
+            404)
+              echo "No existing Release for tag ${TAG} — proceeding to (re)publish."
+              ;;
+            *)
+              echo "::error::Unexpected response while checking Release for tag ${TAG} (HTTP ${http_status:-unknown}, gh api exit ${gh_status})."
+              printf '%s\n' "$gh_response"
               exit 1
-            fi
-          else
-            echo "No existing Release for tag ${TAG} — proceeding to (re)publish."
-          fi
+              ;;
+          esac
 
   build-apk:
     name: Build and Attach Signed APK
