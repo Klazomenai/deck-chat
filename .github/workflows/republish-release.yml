@@ -1,0 +1,65 @@
+name: Republish Release
+
+# Manual recovery workflow — rebuilds the signed APK for an existing tag and
+# attaches it to the GitHub Release. If the Release object does not exist
+# (the alpha.6 incident pattern), it is created with auto-generated notes.
+#
+# Refuses by default to overwrite an existing Release. Pass `force: true` to
+# explicitly opt in to clobbering an existing Release's APK asset.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag of the release to republish (with v prefix, e.g. v0.1.0-alpha.6)'
+        required: true
+        type: string
+      version:
+        description: 'Semver version without leading v (e.g. 0.1.0-alpha.6)'
+        required: true
+        type: string
+      force:
+        description: 'Overwrite an existing Release (false = refuse if Release already exists)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  guard:
+    name: Safety guard — refuse to overwrite existing Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse if Release exists and force is false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${REPO}/releases/tags/${TAG}" >/dev/null 2>&1; then
+            if [ "$FORCE" = "true" ]; then
+              echo "::warning::Release for tag ${TAG} already exists; force=true → proceeding (will clobber asset)."
+            else
+              echo "::error::Release for tag ${TAG} already exists. Refusing to overwrite. Re-run with force=true to override."
+              exit 1
+            fi
+          else
+            echo "No existing Release for tag ${TAG} — proceeding to (re)publish."
+          fi
+
+  build-apk:
+    name: Build and Attach Signed APK
+    needs: guard
+    uses: ./.github/workflows/build-and-attach-apk.yml
+    with:
+      tag: ${{ inputs.tag }}
+      version: ${{ inputs.version }}
+    secrets:
+      RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+      RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}

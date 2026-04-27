@@ -1,0 +1,108 @@
+name: Build and Attach Signed APK (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Git tag for the release (with v prefix, e.g. v0.1.0-alpha.7)'
+        required: true
+        type: string
+      version:
+        description: 'Semver version string without leading v (e.g. 0.1.0-alpha.7)'
+        required: true
+        type: string
+    secrets:
+      RELEASE_KEYSTORE_BASE64:
+        required: true
+      RELEASE_KEYSTORE_PASSWORD:
+        required: true
+      RELEASE_KEY_ALIAS:
+        required: true
+      RELEASE_KEY_PASSWORD:
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build and Attach Signed APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code at tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: DeterminateSystems/nix-installer-action@v14
+
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Decode keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+
+      - name: Download STT models
+        run: nix develop --command bash scripts/download-stt-models.sh
+
+      - name: Download TTS models
+        run: nix develop --command bash scripts/download-tts-models.sh
+
+      - name: Build release APK
+        env:
+          RELEASE_KEYSTORE_FILE: ${{ runner.temp }}/release.keystore
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: nix develop --command ./gradlew assembleRelease
+
+      - name: Rename APK
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          mv "app/build/outputs/apk/release/app-release.apk" \
+             "app/build/outputs/apk/release/deck-chat-${VERSION}.apk"
+
+      - name: Create or update GitHub Release with APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/deck-chat-${VERSION}.apk"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG exists — uploading asset (clobber)."
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            echo "Release $TAG missing — creating with auto-generated notes."
+            gh release create "$TAG" "$APK" \
+              --prerelease \
+              --generate-notes \
+              --title "$TAG"
+          fi
+
+      - name: Summary
+        env:
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          {
+            echo "## Signed APK Published"
+            echo ""
+            echo "**Version:** \`${VERSION}\`"
+            echo "**Tag:** \`${TAG}\`"
+            echo ""
+            echo "Download: [deck-chat-${VERSION}.apk](https://github.com/${{ github.repository }}/releases/download/${TAG}/deck-chat-${VERSION}.apk)"
+          } >> "$GITHUB_STEP_SUMMARY"
