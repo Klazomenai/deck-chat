@@ -52,9 +52,16 @@ jobs:
               # (would-clobber); proceed if the Release exists but the asset is missing
               # (a legitimate recovery case — the alpha.6 variant where the Release object
               # exists but no APK was ever attached).
-              if gh api "repos/${REPO}/releases/tags/${TAG}" \
-                   --jq ".assets[] | select(.name == \"${apk_name}\") | .name" 2>/dev/null \
-                   | grep -qx "${apk_name}"; then
+              asset_lookup_output="$(gh api "repos/${REPO}/releases/tags/${TAG}" \
+                   --jq ".assets[] | select(.name == \"${apk_name}\") | .name" 2>&1)" || asset_lookup_status=$?
+              asset_lookup_status="${asset_lookup_status:-0}"
+              if [ "$asset_lookup_status" -ne 0 ]; then
+                echo "::error::Failed to check whether Release ${TAG} already has asset ${apk_name} (gh api exit ${asset_lookup_status})."
+                printf '%s\n' "$asset_lookup_output"
+                exit 1
+              fi
+
+              if printf '%s\n' "$asset_lookup_output" | grep -qx "${apk_name}"; then
                 if [ "$FORCE" = "true" ]; then
                   echo "::warning::Release ${TAG} already has asset ${apk_name}; force=true → proceeding (will clobber asset)."
                 else
