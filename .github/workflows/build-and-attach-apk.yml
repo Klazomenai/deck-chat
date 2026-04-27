@@ -131,6 +131,57 @@ jobs:
               ;;
           esac
 
+      - name: Verify Release artifact integrity
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          apk_name="deck-chat-${VERSION}.apk"
+
+          # Assertion 1: Release exists for the tag.
+          # We just created or upload-clobbered the Release, so a non-zero exit
+          # from `gh api` here indicates a real problem (transient API failure,
+          # permission regression, or the upstream create/upload silently failed).
+          release_json="$(gh api "repos/${REPO}/releases/tags/${TAG}" 2>&1)" || api_status=$?
+          api_status="${api_status:-0}"
+          if [ "$api_status" -ne 0 ]; then
+            echo "::error::Assertion 1 failed (Release exists): could not query Release ${TAG} (gh api exit ${api_status})."
+            printf '%s\n' "$release_json"
+            exit 1
+          fi
+
+          # Assertion 2: prerelease == true.
+          # Matches release-please-config.json `prerelease: true` and the
+          # alpha-through-M2 versioning policy in RELEASE-PLEASE.md.
+          prerelease="$(printf '%s' "$release_json" | jq -r '.prerelease')"
+          if [ "$prerelease" != "true" ]; then
+            echo "::error::Assertion 2 failed (prerelease flag): Release ${TAG} prerelease=${prerelease}, expected true."
+            exit 1
+          fi
+
+          # Assertion 3: APK asset attached.
+          # Empty `asset_size` from jq indicates "no asset of that name" (jq
+          # returns no output when the filter matches nothing); explicit
+          # empty-string check disambiguates this from `0` (zero bytes).
+          asset_size="$(printf '%s' "$release_json" | jq -r --arg name "${apk_name}" '.assets[] | select(.name == $name) | .size')"
+          if [ -z "$asset_size" ]; then
+            echo "::error::Assertion 3 failed (APK asset attached): Release ${TAG} is missing asset ${apk_name}."
+            echo "Attached assets:"
+            printf '%s' "$release_json" | jq -r '.assets[].name' | sed 's/^/  - /'
+            exit 1
+          fi
+
+          # Assertion 4: asset size > 0.
+          if [ "$asset_size" = "0" ]; then
+            echo "::error::Assertion 4 failed (asset size > 0): Release ${TAG} asset ${apk_name} has zero size."
+            exit 1
+          fi
+
+          echo "Release ${TAG} integrity verified: prerelease=true, ${apk_name} attached (size=${asset_size} bytes)."
+
       - name: Summary
         env:
           TAG: ${{ inputs.tag }}
