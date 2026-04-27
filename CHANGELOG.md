@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.1.0-alpha.7](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.6...v0.1.0-alpha.7) (2026-04-27)
+
+
+### ⛵ New Rigging
+
+* add debug mode with transcript display ✨ ([#156](https://github.com/Klazomenai/deck-chat/issues/156)) ([373e21e](https://github.com/Klazomenai/deck-chat/commit/373e21e187e7a49c1d63ac5c0cefc1990c3cc0f8))
+* add pipeline timing display to debug mode ✨ ([#165](https://github.com/Klazomenai/deck-chat/issues/165)) ([d010e3b](https://github.com/Klazomenai/deck-chat/commit/d010e3b42c69f65ec774c9169bd0475ea48d1067))
+* **ci:** assert release artifact integrity post-publish ✨ ([#179](https://github.com/Klazomenai/deck-chat/issues/179)) ([5b94d32](https://github.com/Klazomenai/deck-chat/commit/5b94d32d44d83f2b96141bbe563513104bb8aebc)), closes [#170](https://github.com/Klazomenai/deck-chat/issues/170)
+* configurable response timeout with elapsed time feedback ⛵ ([#143](https://github.com/Klazomenai/deck-chat/issues/143)) ([95fd764](https://github.com/Klazomenai/deck-chat/commit/95fd764699684e73e5adc986c86d8cd222f64690))
+* enable E2EE key backup and UTD handling ✨ ([#166](https://github.com/Klazomenai/deck-chat/issues/166)) ([dc11999](https://github.com/Klazomenai/deck-chat/commit/dc11999a4b591c1af1d3439dac680a790bbc0fa6)), closes [#141](https://github.com/Klazomenai/deck-chat/issues/141)
+* surface UTD events in debug transcript ✨ ([#168](https://github.com/Klazomenai/deck-chat/issues/168)) ([daad607](https://github.com/Klazomenai/deck-chat/commit/daad607fa1d206a33ef7bbf7ab0dc6b428e2bf5f)), closes [#167](https://github.com/Klazomenai/deck-chat/issues/167)
+
+
+### 🔧 Hull Repairs
+
+* **devenv:** add setup-emulator script for SwiftShader stability 🐛 ([#149](https://github.com/Klazomenai/deck-chat/issues/149)) ([0d22752](https://github.com/Klazomenai/deck-chat/commit/0d227528b43638245769c391f0b2834c05a24e4b))
+* queue crew messages and speak final response for delegation chains 🐛 ([#158](https://github.com/Klazomenai/deck-chat/issues/158)) ([5534265](https://github.com/Klazomenai/deck-chat/commit/55342655e83d34be28e29e351afef7446150823e))
+* retry getRoom() with backoff after Sliding Sync start 🐛 ([#138](https://github.com/Klazomenai/deck-chat/issues/138)) ([831a2e4](https://github.com/Klazomenai/deck-chat/commit/831a2e42ba87e95bd3533ad17d7a675505f9a439))
+* **test:** wrap tearDown in try/finally to guarantee Dispatchers.resetMain() 🐛 ([#151](https://github.com/Klazomenai/deck-chat/issues/151)) ([082a60e](https://github.com/Klazomenai/deck-chat/commit/082a60e26ad69dee59a22b7844e4b37dfd686033)), closes [#150](https://github.com/Klazomenai/deck-chat/issues/150)
+
+
+### ♻️ Refitted
+
+* **ci:** split release publishing into reusable workflow_call ♻️ ([#177](https://github.com/Klazomenai/deck-chat/issues/177)) ([11e868d](https://github.com/Klazomenai/deck-chat/commit/11e868d756aad2af2cf83eaa0a4bca0ab6337183)), closes [#169](https://github.com/Klazomenai/deck-chat/issues/169)
+* **ci:** use grouped redirect in release-please.yml summary step ♻️ ([#175](https://github.com/Klazomenai/deck-chat/issues/175)) ([e90152d](https://github.com/Klazomenai/deck-chat/commit/e90152d8e041562f1db9da62db40c8e8a64f9df6)), closes [#174](https://github.com/Klazomenai/deck-chat/issues/174)
+
 ## [0.1.0-alpha.6](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-04-03)
 
 
