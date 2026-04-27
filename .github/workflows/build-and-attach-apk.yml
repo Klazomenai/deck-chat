@@ -199,8 +199,14 @@ jobs:
             printf '%s\n' "$release_json"
             exit 1
           fi
-          release_id="$(printf '%s' "$release_json" | jq -r '.id')"
-          body="$(printf '%s' "$release_json" | jq -r '.body')"
+          release_id="$(printf '%s' "$release_json" | jq -r '.id // empty')"
+          if [ -z "$release_id" ]; then
+            echo "::error::Failed to determine Release id for ${TAG}; response was malformed."
+            printf '%s\n' "$release_json"
+            exit 1
+          fi
+          # `.body // ""` so a JSON-null body becomes empty string, not the literal "null".
+          body="$(printf '%s' "$release_json" | jq -r '.body // ""')"
 
           # Idempotency: skip if already annotated.
           if printf '%s' "$body" | grep -q "Quartermaster's Log"; then
