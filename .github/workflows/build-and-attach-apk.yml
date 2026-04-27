@@ -270,14 +270,30 @@ jobs:
 
           # Milestone callout — fail-soft if the API calls error.
           # Find dominant milestone among issues referenced in the changelog body.
+          # Require a strict majority (top count > total/2) before claiming a release
+          # "belongs to" a given milestone — releases that genuinely span milestones
+          # should produce no callout rather than misleading the reader.
           milestone_callout=""
           issue_numbers="$(printf '%s' "$body" | grep -oE '#[0-9]+' | sort -u | tr -d '#' || true)"
+          dominant_milestone=""
           if [ -n "$issue_numbers" ]; then
-            dominant_milestone="$(
+            ms_counts="$(
               for n in $issue_numbers; do
                 gh api "repos/${REPO}/issues/${n}" --jq '.milestone.title // empty' 2>/dev/null || true
-              done | sort | uniq -c | sort -rn | head -1 | awk '{$1=""; sub(/^ /, ""); print}' || true
+              done | grep -v '^$' | sort | uniq -c | sort -rn || true
             )"
+            if [ -n "$ms_counts" ]; then
+              total_milestoned=$(printf '%s\n' "$ms_counts" | awk '{s+=$1} END {print s+0}')
+              top_count=$(printf '%s\n' "$ms_counts" | head -1 | awk '{print $1+0}')
+              top_title=$(printf '%s\n' "$ms_counts" | head -1 | awk '{$1=""; sub(/^ /, ""); print}')
+              # Strict majority: top must be > half of milestoned issues.
+              # Examples: 1-of-1 ✓, 1-of-2 ✗, 2-of-3 ✓, 2-of-4 ✗, 3-of-5 ✓, 2-of-2-of-1 ✗.
+              if [ "$top_count" -gt $((total_milestoned / 2)) ]; then
+                dominant_milestone="$top_title"
+              else
+                echo "Milestone callout omitted: no strict majority (${top_count} of ${total_milestoned} milestoned issues — split across multiple milestones)."
+              fi
+            fi
             if [ -n "${dominant_milestone:-}" ]; then
               # `--paginate` + `per_page=100` so we don't silently miss milestones on
               # later pages once the project accumulates more than 30 (the default).
