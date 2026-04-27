@@ -208,8 +208,11 @@ jobs:
           # `.body // ""` so a JSON-null body becomes empty string, not the literal "null".
           body="$(printf '%s' "$release_json" | jq -r '.body // ""')"
 
-          # Idempotency: skip if already annotated.
-          if printf '%s' "$body" | grep -q "Quartermaster's Log"; then
+          # Idempotency: skip only if the exact annotation header line already exists.
+          # `-F` fixed-string (no regex), `-x` whole-line match — defends against the
+          # phrase "Quartermaster's Log" appearing in a commit message or PR title that
+          # release-please pulled into the changelog.
+          if printf '%s\n' "$body" | grep -Fqx "## 🏴‍☠️ Quartermaster's Log"; then
             echo "Release ${TAG} already has Quartermaster's Log header — skipping annotation."
             exit 0
           fi
