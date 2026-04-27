@@ -187,7 +187,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           TAG: ${{ inputs.tag }}
-          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
 
