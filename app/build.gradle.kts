@@ -50,7 +50,7 @@ android {
         applicationId = "dev.klazomenai.deckchat"
         minSdk = 28
         targetSdk = 36
-        val versionStr = "0.1.0-alpha.6" // x-release-please-version
+        val versionStr = "0.1.0-alpha.7" // x-release-please-version
         versionName = versionStr
         versionCode = computeVersionCode(versionStr)
 
