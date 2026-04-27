@@ -279,8 +279,15 @@ jobs:
               done | sort | uniq -c | sort -rn | head -1 | awk '{$1=""; sub(/^ /, ""); print}' || true
             )"
             if [ -n "${dominant_milestone:-}" ]; then
-              ms_data="$(gh api "repos/${REPO}/milestones?state=all" --jq ".[] | select(.title == \"${dominant_milestone}\")" 2>/dev/null || true)"
-              if [ -n "${ms_data:-}" ]; then
+              # `--paginate` + `per_page=100` so we don't silently miss milestones on
+              # later pages once the project accumulates more than 30 (the default).
+              # Filter locally with `jq --arg` rather than interpolating the title into
+              # the jq expression — defends against milestone titles that contain
+              # double-quotes or backslashes (which would otherwise break the jq syntax
+              # silently because of the `2>/dev/null || true` chain).
+              milestones_json="$(gh api --paginate "repos/${REPO}/milestones?state=all&per_page=100" 2>/dev/null || true)"
+              ms_data="$(printf '%s' "$milestones_json" | jq --arg title "$dominant_milestone" -c 'first(.[] | select(.title == $title))' 2>/dev/null || true)"
+              if [ -n "${ms_data:-}" ] && [ "$ms_data" != "null" ]; then
                 ms_state="$(printf '%s' "$ms_data" | jq -r '.state')"
                 ms_open="$(printf '%s' "$ms_data" | jq -r '.open_issues')"
                 ms_closed="$(printf '%s' "$ms_data" | jq -r '.closed_issues')"
