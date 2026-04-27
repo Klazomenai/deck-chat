@@ -102,21 +102,34 @@ jobs:
       - name: Create or update GitHub Release with APK
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
           TAG: ${{ inputs.tag }}
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           APK="app/build/outputs/apk/release/deck-chat-${VERSION}.apk"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG exists — uploading asset (clobber)."
-            gh release upload "$TAG" "$APK" --clobber
-          else
-            echo "Release $TAG missing — creating with auto-generated notes."
-            gh release create "$TAG" "$APK" \
-              --prerelease \
-              --generate-notes \
-              --title "$TAG"
-          fi
+          gh_response="$(gh api --include "repos/${REPO}/releases/tags/${TAG}" 2>&1)" || gh_status=$?
+          gh_status="${gh_status:-0}"
+          http_status="$(printf '%s\n' "$gh_response" | awk '/^HTTP\/[0-9.]+ [0-9]+/ { print $2; exit }')"
+
+          case "$http_status" in
+            200)
+              echo "Release $TAG exists — uploading asset (clobber)."
+              gh release upload "$TAG" "$APK" --clobber
+              ;;
+            404)
+              echo "Release $TAG missing — creating with auto-generated notes."
+              gh release create "$TAG" "$APK" \
+                --prerelease \
+                --generate-notes \
+                --title "$TAG"
+              ;;
+            *)
+              echo "::error::Unexpected response while checking Release for tag ${TAG} (HTTP ${http_status:-unknown}, gh api exit ${gh_status})."
+              printf '%s\n' "$gh_response"
+              exit 1
+              ;;
+          esac
 
       - name: Summary
         env:
