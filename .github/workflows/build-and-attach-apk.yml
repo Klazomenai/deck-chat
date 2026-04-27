@@ -36,8 +36,16 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          if [[ ! "$TAG" =~ ^v[0-9]+(\.[0-9]+){2}([.-][0-9A-Za-z]+)*$ ]]; then
-            echo "Invalid tag format: '$TAG'. Expected v<version> using only [0-9A-Za-z.-]." >&2
+          # Match exactly the regex enforced by computeVersionCode in
+          # app/build.gradle.kts so any input that would later fail the
+          # Gradle build fails here first with a clear message.
+          version_regex='^[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+(\.[0-9]+)?)?$'
+          if [[ ! "$VERSION" =~ $version_regex ]]; then
+            echo "Invalid version format: '$VERSION'. Expected <major>.<minor>.<patch>, optionally followed by -<label> or -<label>.<number> with lowercase labels." >&2
+            exit 1
+          fi
+          if [[ ! "$TAG" =~ ^v${version_regex#^} ]]; then
+            echo "Invalid tag format: '$TAG'. Expected v<version> matching ${version_regex}." >&2
             exit 1
           fi
           if [[ "$TAG" != "v$VERSION" ]]; then
