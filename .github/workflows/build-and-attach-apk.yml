@@ -277,12 +277,24 @@ jobs:
           issue_numbers="$(printf '%s' "$body" | grep -oE '#[0-9]+' | sort -u | tr -d '#' || true)"
           dominant_milestone=""
           if [ -n "$issue_numbers" ]; then
-            ms_counts="$(
-              for n in $issue_numbers; do
-                gh api "repos/${REPO}/issues/${n}" --jq '.milestone.title // empty' 2>/dev/null || true
-              done | grep -v '^$' | sort | uniq -c | sort -rn || true
-            )"
-            if [ -n "$ms_counts" ]; then
+            # Track per-issue lookup failures explicitly: a partial set (e.g. from a
+            # mid-loop rate limit) could otherwise yield a misleading "dominant"
+            # milestone derived from whichever subset happened to succeed. Abort the
+            # callout entirely on first failure — the rest of the Log still renders.
+            issue_lookup_failed=0
+            ms_titles=""
+            for n in $issue_numbers; do
+              if title="$(gh api "repos/${REPO}/issues/${n}" --jq '.milestone.title // empty' 2>/dev/null)"; then
+                [ -n "$title" ] && ms_titles="${ms_titles}${title}"$'\n'
+              else
+                issue_lookup_failed=1
+                break
+              fi
+            done
+            if [ "$issue_lookup_failed" = "1" ]; then
+              echo "Milestone callout omitted: per-issue lookup failed (rate limit / transient API error)."
+            elif [ -n "$ms_titles" ]; then
+              ms_counts="$(printf '%s' "$ms_titles" | sort | uniq -c | sort -rn)"
               total_milestoned=$(printf '%s\n' "$ms_counts" | awk '{s+=$1} END {print s+0}')
               top_count=$(printf '%s\n' "$ms_counts" | head -1 | awk '{print $1+0}')
               top_title=$(printf '%s\n' "$ms_counts" | head -1 | awk '{$1=""; sub(/^ /, ""); print}')
