@@ -331,3 +331,75 @@ gh workflow run republish-release.yml \
    errors) make recovery low-risk: an operator dispatching against the wrong tag, or
    against a healthy Release, will be refused with a clear message rather than silently
    clobbering.
+
+## Quartermaster's Log — release banter
+
+Every Release published by `build-and-attach-apk.yml` gets an automatic
+"🏴‍☠️ Quartermaster's Log" header prepended above the auto-generated changelog.
+The header combines:
+
+- **Optional curated banter** read from `.github/release-notes/<git-tag>.md`
+  if present
+- **Milestone callout** identifying the dominant milestone among the
+  changelog's referenced issues (when a strict majority exists)
+- **Section summary** — a one-line digest counting items per changelog
+  section (`⛵ new rigging`, `🔧 hull repairs`, etc.)
+
+Curated banter is **optional**. Most routine releases are well-served by the
+auto-summary alone; banter is for milestone bookends, incidents, and releases
+with a story worth telling. See
+[`.github/release-notes/README.md`](../release-notes/README.md) for tone,
+length, and naming conventions.
+
+## Backfilling a Release's body retroactively
+
+Occasionally a Release's body needs to be edited or re-annotated after publish
+— e.g. a release that shipped before the Quartermaster's Log feature existed,
+or a body that needs to reflect new context that the auto-summary couldn't have
+known at publish time. The workflow's annotation step is idempotent and
+**won't undo manual edits**, so retroactive backfill is safe.
+
+There are three ways to apply a retroactive change, in increasing CI cost and
+authenticity:
+
+1. **Direct `gh api` PATCH** (cheapest; no CI run, no rebuild). Compose the
+   desired body locally, write it to a file, and PATCH the Release:
+
+   ```bash
+   gh api "repos/${REPO}/releases/${release_id}" \
+     -X PATCH \
+     -F body=@/tmp/new-body.md
+   ```
+
+   Best for body-only changes (banter additions, typo fixes, prose updates).
+   The APK asset is untouched.
+
+2. **One-off helper script**. If the change involves recomputing the
+   Quartermaster's Log header (e.g. backfilling a missed banter file), a
+   transparent local shell script that mirrors the workflow's annotation
+   logic — same `gh api` calls, same `jq` filters, same idempotency check —
+   produces a previewable body, which is then PATCHed via Option 1. Keeps
+   the algorithm in one place; treat the script as one-off scaffolding,
+   not standing infrastructure (the workflow remains the source of truth).
+
+3. **`gh workflow run republish-release.yml -f tag=… -f version=… -f force=true`**
+   (most authentic, ~15 min CI). Re-runs the full reusable workflow against
+   the existing tag. Builds a fresh APK, uploads with `--clobber`, runs
+   integrity assertions, runs the annotation step. The APK SHA changes
+   (different runner, different build metadata) — fine for an alpha but
+   technically alters the asset. Use only when the asset itself needs to
+   be rebuilt, not for body-only fixes.
+
+When in doubt, use Option 1 for body fixes and Option 3 for asset fixes.
+Option 2 is for when an author wants the production code path's exact
+algorithm without the build cost.
+
+### Worked example: alpha.7's inaugural Log
+
+The Quartermaster's Log feature shipped after alpha.7 was already published.
+alpha.7's Release body was retroactively annotated using Option 1 — a
+transparent local shell script (re-using the workflow's algorithm) composed
+the Log header, the rendered output was reviewed visually, and the body was
+PATCHed in place. The APK asset was untouched. From alpha.8 onward the
+workflow's annotation step fires automatically; alpha.7 is the only Release
+that ever needed the retroactive treatment for this specific reason.
