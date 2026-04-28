@@ -363,9 +363,11 @@ There are three ways to apply a retroactive change, in increasing CI cost and
 authenticity:
 
 1. **Direct `gh api` PATCH** (cheapest; no CI run, no rebuild). Compose the
-   desired body locally, write it to a file, and PATCH the Release:
+   desired body locally, write it to a file, look up the Release id from its
+   tag, and PATCH the Release:
 
    ```bash
+   release_id="$(gh api "repos/${REPO}/releases/tags/${TAG}" --jq '.id')"
    gh api "repos/${REPO}/releases/${release_id}" \
      -X PATCH \
      -F body=@/tmp/new-body.md
@@ -397,9 +399,10 @@ algorithm without the build cost.
 ### Worked example: alpha.7's inaugural Log
 
 The Quartermaster's Log feature shipped after alpha.7 was already published.
-alpha.7's Release body was retroactively annotated using Option 1 — a
-transparent local shell script (re-using the workflow's algorithm) composed
-the Log header, the rendered output was reviewed visually, and the body was
-PATCHed in place. The APK asset was untouched. From alpha.8 onward the
-workflow's annotation step fires automatically; alpha.7 is the only Release
-that ever needed the retroactive treatment for this specific reason.
+alpha.7's Release body was retroactively annotated using **Option 2 to
+compose the header, then Option 1 to apply it** — a transparent local shell
+script (re-using the workflow's algorithm) composed the Log header, the
+rendered output was reviewed visually, and the body was PATCHed in place.
+The APK asset was untouched. From alpha.8 onward the workflow's annotation
+step fires automatically; alpha.7 is the only Release that ever needed the
+retroactive treatment for this specific reason.
