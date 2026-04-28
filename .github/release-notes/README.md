@@ -8,8 +8,8 @@ changelog and section summary.
 For the workflow integration (auto-summary, milestone callout, idempotency,
 fail-soft semantics), see the "Annotate Release with Quartermaster's Log"
 step in [`build-and-attach-apk.yml`](../workflows/build-and-attach-apk.yml)
-and the [Recovery runbook](../workflows/RELEASE-PLEASE.md#recovery) for
-backfill operations.
+and the [Backfilling recipe](../workflows/RELEASE-PLEASE.md#backfilling-a-releases-body-retroactively)
+for retroactive body edits.
 
 ## What this directory is
 
@@ -102,7 +102,6 @@ banter file *and* the live Release body; the workflow won't undo your fix.
 ## Worked example
 
 [`v0.1.0-alpha.7.md`](v0.1.0-alpha.7.md) — the inaugural banter file. M1
-banner; references the recovery runbook and four integrity assertions;
-acknowledges alpha.6's 22-day cargo-overboard incident; carries the M1
-narrative without overstating. Length: 5 sentences across 2 paragraphs.
-Use it as the template for tone and length.
+banner; references the Recovery runbook and the four integrity assertions;
+carries the M1 narrative without overstating. Length: 6 sentences across
+2 paragraphs. Use it as the template for tone and length.
