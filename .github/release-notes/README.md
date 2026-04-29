@@ -71,6 +71,18 @@ auto-summary still renders without it.
 - **No code blocks or tables** unless they're load-bearing. The banter
   precedes a Markdown changelog with its own structure; visual contrast is
   the point.
+- **In banter files, links must be absolute URLs.** Banter content is
+  rendered on the GitHub Release page, where relative links like
+  `../workflows/RELEASE-PLEASE.md` do not resolve (no logical "current
+  directory" exists in that context). Use full URLs
+  (`https://github.com/<owner>/<repo>/blob/main/...`) so links work in any
+  rendering context.
+  - **Prefer reference-style links** for absolute URLs in banter files.
+    Define the URL on its own line at the bottom of the file and
+    reference it inline by name (`[Recovery runbook][recovery]` plus
+    `[recovery]: https://...` at the end). Keeps the prose wrap clean
+    in-repo, makes URL updates a single-line edit, and renders
+    identically on the Release page.
 - **EOF newline** — Unix convention. Matches the rest of the repo.
 
 ## Tone
