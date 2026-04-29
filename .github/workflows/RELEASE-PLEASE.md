@@ -367,7 +367,14 @@ authenticity:
    tag, and PATCH the Release:
 
    ```bash
+   # Set these to match your context.
+   REPO="<owner>/<repo>"   # e.g. Klazomenai/deck-chat
+   TAG="<tag>"             # e.g. v0.1.0-alpha.7
+
+   # Look up the Release id for the tag.
    release_id="$(gh api "repos/${REPO}/releases/tags/${TAG}" --jq '.id')"
+
+   # Apply the PATCH.
    gh api "repos/${REPO}/releases/${release_id}" \
      -X PATCH \
      -F body=@/tmp/new-body.md
