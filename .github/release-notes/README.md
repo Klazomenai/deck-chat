@@ -77,6 +77,12 @@ auto-summary still renders without it.
   directory" exists in that context). Use full URLs
   (`https://github.com/<owner>/<repo>/blob/main/...`) so links work in any
   rendering context.
+  - **Prefer reference-style links** for absolute URLs in banter files.
+    Define the URL on its own line at the bottom of the file and
+    reference it inline by name (`[Recovery runbook][recovery]` plus
+    `[recovery]: https://...` at the end). Keeps the prose wrap clean
+    in-repo, makes URL updates a single-line edit, and renders
+    identically on the Release page.
 - **EOF newline** — Unix convention. Matches the rest of the repo.
 
 ## Tone
