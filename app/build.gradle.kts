@@ -29,6 +29,7 @@ plugins {
  * the release configuration (the actual shipped artefact).
  */
 licensee {
+    // Permissive licences:
     allow("Apache-2.0")
     allow("MIT")
     allow("BSD-2-Clause")
@@ -38,9 +39,25 @@ licensee {
     allow("Unlicense")
     allow("CC0-1.0")
 
-    // Copyleft licences compatible with AGPL-3.0 (we ARE AGPL):
+    // Copyleft licences compatible with AGPL-3.0, both -only and
+    // -or-later variants where applicable. AGPL-3.0 §13 explicitly
+    // permits linking with GPL-3.0; -or-later variants of GPL-2
+    // and LGPL-2.1 upgrade to GPL-3 / LGPL-3 respectively and are
+    // therefore also compatible.
+    //
+    // Notably absent (no upgrade path → incompatible with AGPL-3.0):
+    //   - GPL-2.0-only
+    //   - LGPL-2.1-only
+    //   - AGPL-1.0 (any flavour)
+    // If a real dep ever appears with one of these, the build fails
+    // and we make an explicit decision then.
+    allow("GPL-2.0-or-later")
+    allow("GPL-3.0-only")
     allow("GPL-3.0-or-later")
+    allow("LGPL-2.1-or-later")
+    allow("LGPL-3.0-only")
     allow("LGPL-3.0-or-later")
+    allow("AGPL-3.0-only")
     allow("AGPL-3.0-or-later")
 }
 
