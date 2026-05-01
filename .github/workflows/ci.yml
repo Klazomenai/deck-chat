@@ -5,8 +5,38 @@ on:
   pull_request:
 
 jobs:
+  license-audit:
+    # DeckChat is AGPL-3.0-or-later. The `licensee` Gradle plugin
+    # (pinned in gradle/libs.versions.toml) gates every transitive
+    # runtime dependency against an explicit allowlist of
+    # AGPL-compatible licences (configured in app/build.gradle.kts).
+    # This job runs that gate against the release configuration —
+    # the actual shipped artefact — and any unallowed dep fails the
+    # build. Downstream jobs (build, instrumented-tests) `needs:` this
+    # so a failed audit blocks APK builds and emulator runs.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@v14
+
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Licence audit (AGPL-compatible deps only)
+        run: nix develop --command ./gradlew :app:licenseeRelease
+
   build:
     runs-on: ubuntu-latest
+    needs: license-audit
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +67,7 @@ jobs:
 
   instrumented-tests:
     runs-on: ubuntu-latest
+    needs: license-audit
     steps:
       - uses: actions/checkout@v4
 

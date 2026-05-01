@@ -2,6 +2,63 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.licensee)
+}
+
+/**
+ * Licence audit (CI gate).
+ *
+ * DeckChat is AGPL-3.0-or-later. The CLA caps onward sublicensing to
+ * OSI-approved open-source licences only (see CONTRIBUTING.md +
+ * STEWARDSHIP.md). This block is the runtime gate: every transitive
+ * runtime dependency must carry a licence on the allowlist below, or
+ * the Gradle build fails before an APK is produced.
+ *
+ * Allowlist policy: permissive licences (Apache, MIT, BSD-family, MPL-2,
+ * ISC, Unlicense, CC0) plus copyleft variants compatible with AGPL-3.0
+ * (GPL-3.0+, LGPL-3.0+, AGPL-3.0+). Notably absent: GPL-2.0-only and
+ * LGPL-2.1-only — neither has an "or-later" upgrade path and so
+ * neither is compatible with AGPL-3.0 redistribution.
+ *
+ * If a future PR introduces a dep with a licence not on this list, the
+ * audit fails. Two choices then: (a) swap the dep for an allowlisted
+ * alternative, or (b) explicitly extend the allowlist with a `because`
+ * justification — never silently.
+ *
+ * The CI step `./gradlew :app:licenseeRelease` runs this gate against
+ * the release configuration (the actual shipped artefact).
+ */
+licensee {
+    // Permissive licences:
+    allow("Apache-2.0")
+    allow("MIT")
+    allow("BSD-2-Clause")
+    allow("BSD-3-Clause")
+    allow("MPL-2.0")
+    allow("ISC")
+    allow("Unlicense")
+    allow("CC0-1.0")
+
+    // Copyleft licences compatible with AGPL-3.0, both -only and
+    // -or-later variants where applicable. AGPL-3.0 §13 explicitly
+    // permits linking with GPL-3.0; -or-later variants of GPL-2
+    // and LGPL-2.1 upgrade to GPL-3 / LGPL-3 respectively and are
+    // therefore also compatible.
+    //
+    // Notably absent (no upgrade path → incompatible with AGPL-3.0):
+    //   - GPL-2.0-only
+    //   - LGPL-2.1-only
+    //   - AGPL-1.0 (any flavour)
+    // If a real dep ever appears with one of these, the build fails
+    // and we make an explicit decision then.
+    allow("GPL-2.0-or-later")
+    allow("GPL-3.0-only")
+    allow("GPL-3.0-or-later")
+    allow("LGPL-2.1-or-later")
+    allow("LGPL-3.0-only")
+    allow("LGPL-3.0-or-later")
+    allow("AGPL-3.0-only")
+    allow("AGPL-3.0-or-later")
 }
 
 /**

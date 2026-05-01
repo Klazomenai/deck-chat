@@ -227,6 +227,26 @@ on-device — no whisper reaches open water. Matrix messages are end-to-end
 encrypted. Session tokens are encrypted with Android Keystore (StrongBox when available).
 No telemetry. No analytics. No Google Play Services. No exceptions.
 
-## License
+## Licence
 
-Apache-2.0
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
+Licensed under the [GNU Affero General Public License, version 3 or later](LICENSE.md) (AGPL-3.0-or-later).
+
+### Why AGPL?
+
+DeckChat ships in users' pockets, and the licence sails with it. AGPL
+keeps the share-alike spirit intact: anyone who forks DeckChat and
+distributes their version must offer source under the same terms. While
+DeckChat itself isn't a network service (so AGPL §13's network clause
+doesn't bite directly here), uniformity across the Offshore Fleet
+matters — chart-house, Bridge, and DeckChat all sail under the same
+colours so contributors know exactly what they're signing up for.
+
+Klazomenai may relicense DeckChat under any **OSI-approved open-source
+licence** in future, exercising the sublicensing rights granted by
+contributors via the [Contributor Licence Agreement](https://gist.github.com/Klazomenai/b541b6605a823e234e3343a7145035de) —
+but never under proprietary or source-available terms. Contributors
+retain copyright in their contributions. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for the contribution workflow and [STEWARDSHIP.md](STEWARDSHIP.md) for
+the public commitments behind the licence stance.
