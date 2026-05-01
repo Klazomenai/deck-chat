@@ -2,6 +2,46 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.licensee)
+}
+
+/**
+ * Licence audit (CI gate).
+ *
+ * DeckChat is AGPL-3.0-or-later. The CLA caps onward sublicensing to
+ * OSI-approved open-source licences only (see CONTRIBUTING.md +
+ * STEWARDSHIP.md). This block is the runtime gate: every transitive
+ * runtime dependency must carry a licence on the allowlist below, or
+ * the Gradle build fails before an APK is produced.
+ *
+ * Allowlist policy: permissive licences (Apache, MIT, BSD-family, MPL-2,
+ * ISC, Unlicense, CC0) plus copyleft variants compatible with AGPL-3.0
+ * (GPL-3.0+, LGPL-3.0+, AGPL-3.0+). Notably absent: GPL-2.0-only and
+ * LGPL-2.1-only — neither has an "or-later" upgrade path and so
+ * neither is compatible with AGPL-3.0 redistribution.
+ *
+ * If a future PR introduces a dep with a licence not on this list, the
+ * audit fails. Two choices then: (a) swap the dep for an allowlisted
+ * alternative, or (b) explicitly extend the allowlist with a `because`
+ * justification — never silently.
+ *
+ * The CI step `./gradlew :app:licenseeRelease` runs this gate against
+ * the release configuration (the actual shipped artefact).
+ */
+licensee {
+    allow("Apache-2.0")
+    allow("MIT")
+    allow("BSD-2-Clause")
+    allow("BSD-3-Clause")
+    allow("MPL-2.0")
+    allow("ISC")
+    allow("Unlicense")
+    allow("CC0-1.0")
+
+    // Copyleft licences compatible with AGPL-3.0 (we ARE AGPL):
+    allow("GPL-3.0-or-later")
+    allow("LGPL-3.0-or-later")
+    allow("AGPL-3.0-or-later")
 }
 
 /**

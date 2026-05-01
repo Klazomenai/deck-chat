@@ -18,6 +18,7 @@ testRunner     = "1.6.2"
 testRules      = "1.6.1"    # latest available; runner 1.6.2 is compatible
 testExtJunit   = "1.2.1"
 junit          = "4.13.2"
+licensee       = "1.14.1"   # latest stable; pinned for reproducible CI license-audit gate
 
 [libraries]
 androidx-core-ktx        = { group = "androidx.core",                name = "core-ktx",         version.ref = "coreKtx" }
@@ -43,3 +44,4 @@ androidx-test-ext-junit      = { group = "androidx.test.ext",         name = "ju
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android      = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+licensee            = { id = "app.cash.licensee", version.ref = "licensee" }
