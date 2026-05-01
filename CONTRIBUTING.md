@@ -55,18 +55,26 @@ Aye, here's how we move the work from quayside to mast:
 
 ## Fitting Out — Local Development
 
-DeckChat is a Kotlin Android app, Gradle KTS, Nix devenv. The full
-README covers prerequisites, Android SDK provisioning, emulator
-quirks, and the model-pull dance. The minimum dance:
+DeckChat is a Kotlin Android app, Gradle KTS, Nix devenv. The canonical
+local development shell is **devenv** — it provides the full toolchain
+plus the emulator and helper scripts. The minimum dance:
 
 ```bash
-nix develop                                        # enter the dev shell (Android SDK, JDK 17, Gradle)
-nix develop --command ./gradlew lint               # lint
-nix develop --command ./gradlew test               # unit tests (Robolectric)
-nix develop --command ./gradlew assembleDebug      # debug APK
-nix develop --command ./gradlew assembleRelease    # release APK (R8 validation)
-nix develop --command ./gradlew :app:licenseeRelease  # licence audit (matches CI)
+devenv shell                       # enter the dev shell (full toolchain + emulator)
+./gradlew lint                     # lint
+./gradlew test                     # unit tests (Robolectric)
+./gradlew assembleDebug            # debug APK
+./gradlew assembleRelease          # release APK (R8 validation)
+./gradlew :app:licenseeRelease     # licence audit (matches CI)
 ```
+
+The full README covers prerequisites, Android SDK provisioning, emulator
+quirks, and the model-pull dance.
+
+CI uses `nix develop` (the leaner shell defined in `flake.nix`, no
+emulator) since it doesn't need the emulator system images — saves
+~4 GB per run. Contributors should use `devenv shell` locally to get
+the full environment.
 
 CI runs lint + unit tests + debug APK + release APK + licence audit on
 every PR. Instrumented tests run on a separate emulator job.
