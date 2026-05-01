@@ -100,7 +100,7 @@ Where the rigging is dressed, every line in its place:
 ## Distribution & Licence Note
 
 DeckChat targets **F-Droid** as primary distribution. Google Play has
-historically been frictious with AGPL on Android — F-Droid is fully
+historically had friction with AGPL on Android — F-Droid is fully
 compatible and aligns with the open-source-by-default privacy posture.
 If a Google Play presence is ever pursued, the legal landscape there
 will need a fresh review.
