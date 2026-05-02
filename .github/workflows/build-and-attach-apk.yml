@@ -25,6 +25,12 @@ permissions:
   contents: write
   issues: read
 
+# Opt into Node 24 ahead of GitHub's forced migration on 2026-06-02 (Node
+# 20 actions removed entirely 2026-09-16). Drop this env once upstreams
+# bump to Node-24-native versions and we update them deliberately.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build-apk:
     name: Build and Attach Signed APK
@@ -61,8 +67,6 @@ jobs:
           ref: refs/tags/${{ steps.validate_tag.outputs.tag }}
 
       - uses: DeterminateSystems/nix-installer-action@v14
-
-      - uses: DeterminateSystems/magic-nix-cache-action@v8
 
       - name: Cache Gradle
         uses: actions/cache@v4

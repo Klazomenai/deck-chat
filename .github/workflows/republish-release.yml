@@ -28,6 +28,12 @@ permissions:
   contents: write
   issues: read
 
+# Opt into Node 24 ahead of GitHub's forced migration on 2026-06-02 (Node
+# 20 actions removed entirely 2026-09-16). Drop this env once upstreams
+# bump to Node-24-native versions and we update them deliberately.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   guard:
     name: Safety guard — refuse to overwrite existing Release
