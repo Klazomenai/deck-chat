@@ -66,6 +66,20 @@ jobs:
         with:
           ref: refs/tags/${{ steps.validate_tag.outputs.tag }}
 
+      - name: Checkout CI helper scripts at workflow ref
+        # Republish runs check out the tag (above) to build APK sources from
+        # that point in history. CI helper scripts under .github/scripts/ may
+        # not exist in older tags' trees, so source them from the workflow's
+        # own ref (typically main) into a side path. Done AFTER the tag
+        # checkout so the tag checkout's clean step can't remove them.
+        uses: actions/checkout@v4
+        with:
+          # No `ref:` — defaults to the workflow's ref (github.sha for the
+          # caller's commit), where the helper definitely exists.
+          sparse-checkout: |
+            .github/scripts
+          path: ci-helpers
+
       - uses: DeterminateSystems/nix-installer-action@v14
 
       - name: Cache Gradle
@@ -112,7 +126,7 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           # gh-api.sh itself sets `set -euo pipefail` on source.
-          source "$GITHUB_WORKSPACE/.github/scripts/gh-api.sh"
+          source "$GITHUB_WORKSPACE/ci-helpers/.github/scripts/gh-api.sh"
           APK="app/build/outputs/apk/release/deck-chat-${VERSION}.apk"
 
           # `|| true` so a parseable 4xx/5xx (or the "unknown" fail-closed
@@ -146,7 +160,7 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           # gh-api.sh itself sets `set -euo pipefail` on source.
-          source "$GITHUB_WORKSPACE/.github/scripts/gh-api.sh"
+          source "$GITHUB_WORKSPACE/ci-helpers/.github/scripts/gh-api.sh"
           apk_name="deck-chat-${VERSION}.apk"
 
           # Assertion 1: Release exists for the tag.
@@ -197,7 +211,7 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           # gh-api.sh itself sets `set -euo pipefail` on source.
-          source "$GITHUB_WORKSPACE/.github/scripts/gh-api.sh"
+          source "$GITHUB_WORKSPACE/ci-helpers/.github/scripts/gh-api.sh"
 
           # Fetch current Release body and id. The integrity step above
           # already confirmed Release-exists, so anything other than HTTP 200
