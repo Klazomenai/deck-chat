@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -129,6 +130,22 @@ class MainViewModelTest {
         viewModel.setState(PipelineState.Transcribed("hello"))
         assertTrue(viewModel.state.value is PipelineState.Transcribed)
         assertEquals("hello", (viewModel.state.value as PipelineState.Transcribed).text)
+    }
+
+    @Test
+    fun `releaseResources cancels viewModelScope`() {
+        // Guards the JVM-test cleanup contract: tearDown() calls releaseResources()
+        // directly without the framework's super.onCleared() firing first, so
+        // releaseResources() itself must cancel viewModelScope to stop in-flight
+        // RecordingService.serviceEvents collectors from firing pipelines into
+        // the freshly-closed crewMessages channel. This test is also the safety
+        // net for #161 / #162 which depend on the cancel-then-close ordering.
+        val viewModel = createViewModel()
+        assertTrue("viewModelScope should be active before releaseResources", viewModel.isScopeActive)
+
+        viewModel.releaseResources()
+
+        assertFalse("viewModelScope should be cancelled after releaseResources", viewModel.isScopeActive)
     }
 
     @Test
