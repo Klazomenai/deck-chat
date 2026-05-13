@@ -70,16 +70,22 @@ jobs:
               # (would-clobber); proceed if the Release exists but the asset is missing
               # (a legitimate recovery case — the alpha.6 variant where the Release object
               # exists but no APK was ever attached).
-              asset_lookup_output="$(gh api "repos/${REPO}/releases/tags/${TAG}" \
-                   --jq ".assets[] | select(.name == \"${apk_name}\") | .name" 2>&1)" || asset_lookup_status=$?
-              asset_lookup_status="${asset_lookup_status:-0}"
-              if [ "$asset_lookup_status" -ne 0 ]; then
-                echo "::error::Failed to check whether Release ${TAG} already has asset ${apk_name} (gh api exit ${asset_lookup_status})."
-                printf '%s\n' "$asset_lookup_output"
+              #
+              # $GH_API_BODY (set by gh_api_with_status above) already contains the full
+              # Release JSON including the `.assets` array — so we filter locally with jq
+              # instead of issuing a second API request. `.assets[]?` is `?`-suffixed so
+              # a malformed-or-null assets field surfaces as empty rather than a jq error.
+              asset_attached="$(printf '%s' "$GH_API_BODY" \
+                | jq -r --arg name "${apk_name}" '.assets[]? | select(.name == $name) | .name')" \
+                || jq_status=$?
+              jq_status="${jq_status:-0}"
+              if [ "$jq_status" -ne 0 ]; then
+                echo "::error::Failed to parse Release JSON for ${TAG} (jq exit ${jq_status})."
+                printf '%s\n' "$GH_API_BODY"
                 exit 1
               fi
 
-              if printf '%s\n' "$asset_lookup_output" | grep -Fqx -- "${apk_name}"; then
+              if printf '%s\n' "$asset_attached" | grep -Fqx -- "${apk_name}"; then
                 if [ "$FORCE" = "true" ]; then
                   echo "::warning::Release ${TAG} already has asset ${apk_name}; force=true → proceeding (will clobber asset)."
                 else
