@@ -150,9 +150,14 @@ android {
         }
     }
 
-    testOptions {
-        unitTests.isReturnDefaultValues = true
-    }
+    // testOptions block intentionally absent — `unitTests.isReturnDefaultValues`
+    // defaults to false, which is what we want: every JVM test that touches the
+    // Android framework must use @RunWith(RobolectricTestRunner::class) so real
+    // framework stubs are wired in. The `returnDefaultValues = true` escape hatch
+    // silently stubs every un-mocked Android call (e.g. Context.getResources()
+    // returning null), masking bugs. Robolectric + @Config(sdk = [34]) is the
+    // discipline; see app/src/test/java/.../MainViewModelTest.kt and the other
+    // four Robolectric-annotated tests.
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
