@@ -250,6 +250,10 @@ What to expect after dispatch:
    - Validates the `tag`/`version` inputs against the regex from
      `app/build.gradle.kts`'s `computeVersionCode`
    - Checks out `refs/tags/<tag>` (forces tag-only resolution)
+   - Performs a **second sparse checkout at the workflow's own ref** into
+     `ci-helpers/` to vendor `.github/scripts/*.sh` — so historical tags
+     that predate a CI helper still republish cleanly without the source
+     line dying at a missing file
    - Builds and signs the APK
    - Calls `gh release upload --clobber` (200 path) or `gh release create --prerelease
      --generate-notes` (404 path)
@@ -278,6 +282,11 @@ properly published.
 - **Don't manually upload a locally-built APK.** Local builds bypass the CI provenance
   chain. The signing key and build environment are the same in both cases, but the
   audit trail is not — every published artefact should be traceable to a CI workflow run.
+- **Don't move CI helper scripts back into the tag-checkout source tree.** The reusable
+  workflow vendors `.github/scripts/*.sh` from the workflow's own ref into `ci-helpers/`
+  so republishing pre-script tags works. Inlining the helpers into the tag-checkout tree
+  would re-introduce the historical-tag break — `v0.1.0-alpha.6` and any other tag
+  predating a helper's introduction would die at the first `source` line.
 
 ### Worked example: the v0.1.0-alpha.6 incident (2026-04-03 → 2026-04-27)
 

@@ -39,6 +39,17 @@ jobs:
     name: Safety guard — refuse to overwrite existing Release
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout for gh-api helper
+        # Lightweight cone-mode sparse checkout — `.github/scripts/gh-api.sh`
+        # is sourced by the next step. Cone mode (the default) treats listed
+        # paths as directory cones and includes their contents; switching to
+        # non-cone mode here would pattern-match the path itself, which can
+        # leave the helper file un-checked-out depending on git's interpretation.
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts
+
       - name: Refuse if Release exists and force is false
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,28 +58,36 @@ jobs:
           VERSION: ${{ inputs.version }}
           FORCE: ${{ inputs.force }}
         run: |
-          set -euo pipefail
+          # gh-api.sh itself sets `set -euo pipefail` on source.
+          source "$GITHUB_WORKSPACE/.github/scripts/gh-api.sh"
           apk_name="deck-chat-${VERSION}.apk"
-          gh_response="$(gh api --include "repos/${REPO}/releases/tags/${TAG}" 2>&1)" || gh_status=$?
-          gh_status="${gh_status:-0}"
-          http_status="$(printf '%s\n' "$gh_response" | awk '/^HTTP\/[0-9.]+ [0-9]+/ { print $2; exit }')"
 
-          case "$http_status" in
+          # `|| true` so a parseable 4xx/5xx (or the "unknown" fail-closed
+          # path) reaches the case below rather than triggering set -e exit.
+          gh_api_with_status "repos/${REPO}/releases/tags/${TAG}" || true
+
+          case "$GH_API_HTTP_STATUS" in
             200)
               # Release exists. Refuse only if the specific APK asset is already attached
               # (would-clobber); proceed if the Release exists but the asset is missing
               # (a legitimate recovery case — the alpha.6 variant where the Release object
               # exists but no APK was ever attached).
-              asset_lookup_output="$(gh api "repos/${REPO}/releases/tags/${TAG}" \
-                   --jq ".assets[] | select(.name == \"${apk_name}\") | .name" 2>&1)" || asset_lookup_status=$?
-              asset_lookup_status="${asset_lookup_status:-0}"
-              if [ "$asset_lookup_status" -ne 0 ]; then
-                echo "::error::Failed to check whether Release ${TAG} already has asset ${apk_name} (gh api exit ${asset_lookup_status})."
-                printf '%s\n' "$asset_lookup_output"
+              #
+              # $GH_API_BODY (set by gh_api_with_status above) already contains the full
+              # Release JSON including the `.assets` array — so we filter locally with jq
+              # instead of issuing a second API request. `.assets[]?` is `?`-suffixed so
+              # a malformed-or-null assets field surfaces as empty rather than a jq error.
+              asset_attached="$(printf '%s' "$GH_API_BODY" \
+                | jq -r --arg name "${apk_name}" '.assets[]? | select(.name == $name) | .name')" \
+                || jq_status=$?
+              jq_status="${jq_status:-0}"
+              if [ "$jq_status" -ne 0 ]; then
+                echo "::error::Failed to parse Release JSON for ${TAG} (jq exit ${jq_status})."
+                printf '%s\n' "$GH_API_BODY"
                 exit 1
               fi
 
-              if printf '%s\n' "$asset_lookup_output" | grep -Fqx -- "${apk_name}"; then
+              if printf '%s\n' "$asset_attached" | grep -Fqx -- "${apk_name}"; then
                 if [ "$FORCE" = "true" ]; then
                   echo "::warning::Release ${TAG} already has asset ${apk_name}; force=true → proceeding (will clobber asset)."
                 else
@@ -83,8 +102,8 @@ jobs:
               echo "No existing Release for tag ${TAG} — proceeding to (re)publish."
               ;;
             *)
-              echo "::error::Unexpected response while checking Release for tag ${TAG} (HTTP ${http_status:-unknown}, gh api exit ${gh_status})."
-              printf '%s\n' "$gh_response"
+              echo "::error::Unexpected response while checking Release for tag ${TAG} (HTTP ${GH_API_HTTP_STATUS})."
+              printf '%s\n' "$GH_API_RESPONSE"
               exit 1
               ;;
           esac
