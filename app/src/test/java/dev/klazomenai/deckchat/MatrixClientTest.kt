@@ -1,5 +1,6 @@
 package dev.klazomenai.deckchat
 
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +18,12 @@ import org.junit.Test
 class MockMatrixClient(
     var shouldThrowOnSend: Boolean = false,
     var sendThrowMessage: String = "Matrix send failed",
+    /**
+     * When true, [stop] suspends indefinitely via [awaitCancellation]. Used by
+     * `MainViewModelTest.releaseResources times out hung matrix stop` to model
+     * the network-stall-during-sync-shutdown ANR vector that #162 closes.
+     */
+    var hangStop: Boolean = false,
 ) : MatrixClient {
     data class SentMessage(val roomId: String, val text: String)
 
@@ -56,6 +63,7 @@ class MockMatrixClient(
     }
 
     override suspend fun stop() {
+        if (hangStop) awaitCancellation()
         stopCount++
     }
 
