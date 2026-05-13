@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -285,8 +287,26 @@ class MainViewModel(
         releaseResources()
     }
 
+    /**
+     * Cleans up the ViewModel's owned resources. Called from [onCleared] in the
+     * production lifecycle (after the framework cancels [viewModelScope] via
+     * `super.onCleared`), and called **directly** by JVM test teardown without
+     * the framework cancel ever firing.
+     *
+     * For the test path to be honest, this method itself cancels [viewModelScope]
+     * before closing channels and engines — otherwise in-flight pipelines
+     * launched into the scope can keep collecting [RecordingService.serviceEvents]
+     * and fire into freshly-closed channels, producing noisy red-herring errors
+     * in test failure logs as more online-mode tests land. In the production
+     * path the cancel is a no-op (the scope was already cancelled by
+     * `super.onCleared`), which is the intended idempotency.
+     *
+     * The `matrixClient.stop()` runs on a `NonCancellable` IO context after the
+     * scope cancel, so the Matrix shutdown sequence is not interrupted.
+     */
     @VisibleForTesting
     internal fun releaseResources() {
+        viewModelScope.cancel()
         crewMessages.close()
         sttEngine.close()
         ttsEngine.close()
@@ -294,6 +314,15 @@ class MainViewModel(
             runBlocking(Dispatchers.IO + NonCancellable) { client.stop() }
         }
     }
+
+    /**
+     * Exposes [viewModelScope]'s active-or-cancelled state for assertions in
+     * unit tests. The scope is active from construction until [releaseResources]
+     * runs (or until the framework's `super.onCleared` fires in production).
+     */
+    @VisibleForTesting
+    internal val isScopeActive: Boolean
+        get() = viewModelScope.isActive
 
     class Factory(
         private val sttEngine: SttEngine,
