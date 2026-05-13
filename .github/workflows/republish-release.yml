@@ -39,6 +39,15 @@ jobs:
     name: Safety guard — refuse to overwrite existing Release
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout for gh-api helper
+        # Lightweight checkout — `.github/scripts/gh-api.sh` is sourced by
+        # the next step. Sparse paths keep this cheap (~1-2s).
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts
+          sparse-checkout-cone-mode: false
+
       - name: Refuse if Release exists and force is false
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,13 +56,15 @@ jobs:
           VERSION: ${{ inputs.version }}
           FORCE: ${{ inputs.force }}
         run: |
-          set -euo pipefail
+          # gh-api.sh itself sets `set -euo pipefail` on source.
+          source "$GITHUB_WORKSPACE/.github/scripts/gh-api.sh"
           apk_name="deck-chat-${VERSION}.apk"
-          gh_response="$(gh api --include "repos/${REPO}/releases/tags/${TAG}" 2>&1)" || gh_status=$?
-          gh_status="${gh_status:-0}"
-          http_status="$(printf '%s\n' "$gh_response" | awk '/^HTTP\/[0-9.]+ [0-9]+/ { print $2; exit }')"
 
-          case "$http_status" in
+          # `|| true` so a parseable 4xx/5xx (or the "unknown" fail-closed
+          # path) reaches the case below rather than triggering set -e exit.
+          gh_api_with_status "repos/${REPO}/releases/tags/${TAG}" || true
+
+          case "$GH_API_HTTP_STATUS" in
             200)
               # Release exists. Refuse only if the specific APK asset is already attached
               # (would-clobber); proceed if the Release exists but the asset is missing
@@ -83,8 +94,8 @@ jobs:
               echo "No existing Release for tag ${TAG} — proceeding to (re)publish."
               ;;
             *)
-              echo "::error::Unexpected response while checking Release for tag ${TAG} (HTTP ${http_status:-unknown}, gh api exit ${gh_status})."
-              printf '%s\n' "$gh_response"
+              echo "::error::Unexpected response while checking Release for tag ${TAG} (HTTP ${GH_API_HTTP_STATUS})."
+              printf '%s\n' "$GH_API_RESPONSE"
               exit 1
               ;;
           esac

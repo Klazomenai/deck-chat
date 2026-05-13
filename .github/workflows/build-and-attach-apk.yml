@@ -111,13 +111,15 @@ jobs:
           TAG: ${{ inputs.tag }}
           VERSION: ${{ inputs.version }}
         run: |
-          set -euo pipefail
+          # gh-api.sh itself sets `set -euo pipefail` on source.
+          source "$GITHUB_WORKSPACE/.github/scripts/gh-api.sh"
           APK="app/build/outputs/apk/release/deck-chat-${VERSION}.apk"
-          gh_response="$(gh api --include "repos/${REPO}/releases/tags/${TAG}" 2>&1)" || gh_status=$?
-          gh_status="${gh_status:-0}"
-          http_status="$(printf '%s\n' "$gh_response" | awk '/^HTTP\/[0-9.]+ [0-9]+/ { print $2; exit }')"
 
-          case "$http_status" in
+          # `|| true` so a parseable 4xx/5xx (or the "unknown" fail-closed
+          # path) reaches the case below rather than triggering set -e exit.
+          gh_api_with_status "repos/${REPO}/releases/tags/${TAG}" || true
+
+          case "$GH_API_HTTP_STATUS" in
             200)
               echo "Release $TAG exists — uploading asset (clobber)."
               gh release upload "$TAG" "$APK" --clobber
@@ -130,8 +132,8 @@ jobs:
                 --title "$TAG"
               ;;
             *)
-              echo "::error::Unexpected response while checking Release for tag ${TAG} (HTTP ${http_status:-unknown}, gh api exit ${gh_status})."
-              printf '%s\n' "$gh_response"
+              echo "::error::Unexpected response while checking Release for tag ${TAG} (HTTP ${GH_API_HTTP_STATUS})."
+              printf '%s\n' "$GH_API_RESPONSE"
               exit 1
               ;;
           esac
@@ -143,20 +145,21 @@ jobs:
           TAG: ${{ inputs.tag }}
           VERSION: ${{ inputs.version }}
         run: |
-          set -euo pipefail
+          # gh-api.sh itself sets `set -euo pipefail` on source.
+          source "$GITHUB_WORKSPACE/.github/scripts/gh-api.sh"
           apk_name="deck-chat-${VERSION}.apk"
 
           # Assertion 1: Release exists for the tag.
-          # We just created or upload-clobbered the Release, so a non-zero exit
-          # from `gh api` here indicates a real problem (transient API failure,
+          # We just created or upload-clobbered the Release, so anything other
+          # than HTTP 200 here indicates a real problem (transient API failure,
           # permission regression, or the upstream create/upload silently failed).
-          release_json="$(gh api "repos/${REPO}/releases/tags/${TAG}" 2>&1)" || api_status=$?
-          api_status="${api_status:-0}"
-          if [ "$api_status" -ne 0 ]; then
-            echo "::error::Assertion 1 failed (Release exists): could not query Release ${TAG} (gh api exit ${api_status})."
-            printf '%s\n' "$release_json"
+          gh_api_with_status "repos/${REPO}/releases/tags/${TAG}" || true
+          if [ "$GH_API_HTTP_STATUS" != "200" ]; then
+            echo "::error::Assertion 1 failed (Release exists): could not query Release ${TAG} (HTTP ${GH_API_HTTP_STATUS})."
+            printf '%s\n' "$GH_API_RESPONSE"
             exit 1
           fi
+          release_json="$GH_API_BODY"
 
           # Assertion 2: prerelease == true.
           # Matches release-please-config.json `prerelease: true` and the
@@ -193,16 +196,19 @@ jobs:
           REPO: ${{ github.repository }}
           TAG: ${{ inputs.tag }}
         run: |
-          set -euo pipefail
+          # gh-api.sh itself sets `set -euo pipefail` on source.
+          source "$GITHUB_WORKSPACE/.github/scripts/gh-api.sh"
 
-          # Fetch current Release body and id.
-          release_json="$(gh api "repos/${REPO}/releases/tags/${TAG}" 2>&1)" || api_status=$?
-          api_status="${api_status:-0}"
-          if [ "$api_status" -ne 0 ]; then
-            echo "::error::Failed to fetch Release ${TAG} for annotation (gh api exit ${api_status})."
-            printf '%s\n' "$release_json"
+          # Fetch current Release body and id. The integrity step above
+          # already confirmed Release-exists, so anything other than HTTP 200
+          # here is a transient failure or permission regression.
+          gh_api_with_status "repos/${REPO}/releases/tags/${TAG}" || true
+          if [ "$GH_API_HTTP_STATUS" != "200" ]; then
+            echo "::error::Failed to fetch Release ${TAG} for annotation (HTTP ${GH_API_HTTP_STATUS})."
+            printf '%s\n' "$GH_API_RESPONSE"
             exit 1
           fi
+          release_json="$GH_API_BODY"
           release_id="$(printf '%s' "$release_json" | jq -r '.id // empty')"
           if [ -z "$release_id" ]; then
             echo "::error::Failed to determine Release id for ${TAG}; response was malformed."
