@@ -150,6 +150,19 @@ class MainViewModelTest {
         assertFalse("viewModelScope should be cancelled after releaseResources", viewModel.isScopeActive)
     }
 
+    @Test(expected = IllegalArgumentException::class)
+    fun `MainViewModel rejects zero stopTimeoutMs at construction`() {
+        // withTimeoutOrNull throws IllegalArgumentException on non-positive
+        // timeMillis. Fail-loud at construction is preferable to crashing
+        // during teardown.
+        createViewModel(stopTimeoutMs = 0L)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `MainViewModel rejects negative stopTimeoutMs at construction`() {
+        createViewModel(stopTimeoutMs = -1L)
+    }
+
     @Test
     fun `releaseResources times out hung matrix stop`() {
         // Models the network-stall-during-sync-shutdown ANR vector closed by

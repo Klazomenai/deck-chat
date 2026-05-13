@@ -44,6 +44,15 @@ class MainViewModel(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
+    init {
+        // `withTimeoutOrNull` throws IllegalArgumentException on non-positive
+        // timeMillis. Fail loud at VM construction (where bad config is
+        // diagnosable) rather than during teardown (the worst place to crash).
+        require(stopTimeoutMs > 0) {
+            "stopTimeoutMs must be > 0 (got $stopTimeoutMs); withTimeoutOrNull rejects non-positive timeouts"
+        }
+    }
+
     private val _state = MutableStateFlow<PipelineState>(PipelineState.Idle)
     val state: StateFlow<PipelineState> = _state.asStateFlow()
 
