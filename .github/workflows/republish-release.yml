@@ -40,13 +40,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout for gh-api helper
-        # Lightweight checkout — `.github/scripts/gh-api.sh` is sourced by
-        # the next step. Sparse paths keep this cheap (~1-2s).
+        # Lightweight cone-mode sparse checkout — `.github/scripts/gh-api.sh`
+        # is sourced by the next step. Cone mode (the default) treats listed
+        # paths as directory cones and includes their contents; switching to
+        # non-cone mode here would pattern-match the path itself, which can
+        # leave the helper file un-checked-out depending on git's interpretation.
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
             .github/scripts
-          sparse-checkout-cone-mode: false
 
       - name: Refuse if Release exists and force is false
         env:
