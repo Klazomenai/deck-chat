@@ -40,8 +40,18 @@ class MainViewModel(
     private val audioFileProvider: () -> File,
     private val defaultCrew: String = DEFAULT_CREW,
     private val responseTimeoutMs: Long = DEFAULT_RESPONSE_TIMEOUT_MS,
+    private val stopTimeoutMs: Long = DEFAULT_STOP_TIMEOUT_MS,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
+
+    init {
+        // `withTimeoutOrNull` throws IllegalArgumentException on non-positive
+        // timeMillis. Fail loud at VM construction (where bad config is
+        // diagnosable) rather than during teardown (the worst place to crash).
+        require(stopTimeoutMs > 0) {
+            "stopTimeoutMs must be > 0 (got $stopTimeoutMs); withTimeoutOrNull rejects non-positive timeouts"
+        }
+    }
 
     private val _state = MutableStateFlow<PipelineState>(PipelineState.Idle)
     val state: StateFlow<PipelineState> = _state.asStateFlow()
@@ -311,7 +321,20 @@ class MainViewModel(
         sttEngine.close()
         ttsEngine.close()
         matrixClient?.let { client ->
-            runBlocking(Dispatchers.IO + NonCancellable) { client.stop() }
+            // Bound the Matrix shutdown: a hung `stop()` (e.g. network stall during sync
+            // shutdown on a flaky link) inside `runBlocking` on the main thread is an ANR
+            // waiting to happen when the user backgrounds the app. `withTimeoutOrNull`
+            // returns null on timeout; we log + continue rather than throwing so the rest
+            // of cleanup completes deterministically. The cancel from withTimeoutOrNull
+            // does propagate into client.stop()'s suspension points (NonCancellable is on
+            // the outer parent — it can't be cancelled from above, but it does NOT
+            // intercept the timeout coroutine's cancel of its own child).
+            runBlocking(Dispatchers.IO + NonCancellable) {
+                val result = withTimeoutOrNull(stopTimeoutMs) { client.stop() }
+                if (result == null) {
+                    Log.w(TAG, "matrixClient.stop() timed out after ${stopTimeoutMs}ms; continuing cleanup")
+                }
+            }
         }
     }
 
@@ -332,12 +355,13 @@ class MainViewModel(
         private val audioFileProvider: () -> File,
         private val defaultCrew: String = DEFAULT_CREW,
         private val responseTimeoutMs: Long = DEFAULT_RESPONSE_TIMEOUT_MS,
+        private val stopTimeoutMs: Long = DEFAULT_STOP_TIMEOUT_MS,
         private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-                return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider, defaultCrew, responseTimeoutMs, ioDispatcher) as T
+                return MainViewModel(sttEngine, ttsEngine, matrixClient, roomId, audioFileProvider, defaultCrew, responseTimeoutMs, stopTimeoutMs, ioDispatcher) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
@@ -348,6 +372,10 @@ class MainViewModel(
         internal val DEFAULT_RESPONSE_TIMEOUT_MS = SecureStorage.DEFAULT_RESPONSE_TIMEOUT_SEC * 1000L
         internal const val DEFAULT_CREW = "maren"
         internal const val DELEGATION_SETTLE_MS = 5_000L
+        // Bounded teardown for matrixClient.stop() — five seconds is plenty of rope;
+        // anything longer means we're scuttling the boat while the user waits to
+        // background the app on a flaky link.
+        internal const val DEFAULT_STOP_TIMEOUT_MS = 5_000L
     }
 }
 

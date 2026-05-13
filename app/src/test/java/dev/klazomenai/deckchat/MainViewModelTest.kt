@@ -52,6 +52,7 @@ class MainViewModelTest {
         matrixClient: MatrixClient? = null,
         roomId: String? = null,
         defaultCrew: String = "maren",
+        stopTimeoutMs: Long = MainViewModel.DEFAULT_STOP_TIMEOUT_MS,
     ): MainViewModel {
         return MainViewModel(
             sttEngine = MockSttEngine(returnText = sttResult),
@@ -60,6 +61,7 @@ class MainViewModelTest {
             roomId = roomId,
             audioFileProvider = { audioFile },
             defaultCrew = defaultCrew,
+            stopTimeoutMs = stopTimeoutMs,
             ioDispatcher = testDispatcher,
         ).also { viewModels.add(it) }
     }
@@ -146,6 +148,51 @@ class MainViewModelTest {
         viewModel.releaseResources()
 
         assertFalse("viewModelScope should be cancelled after releaseResources", viewModel.isScopeActive)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `MainViewModel rejects zero stopTimeoutMs at construction`() {
+        // withTimeoutOrNull throws IllegalArgumentException on non-positive
+        // timeMillis. Fail-loud at construction is preferable to crashing
+        // during teardown.
+        createViewModel(stopTimeoutMs = 0L)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `MainViewModel rejects negative stopTimeoutMs at construction`() {
+        createViewModel(stopTimeoutMs = -1L)
+    }
+
+    @Test
+    fun `releaseResources times out hung matrix stop`() {
+        // Models the network-stall-during-sync-shutdown ANR vector closed by
+        // #162: MockMatrixClient.stop() suspends via awaitCancellation(), so
+        // without withTimeoutOrNull the runBlocking would block the calling
+        // thread until the JVM test runner kills the suite. With the timeout
+        // wrapper, releaseResources() returns within stopTimeoutMs and the
+        // stop body's stopCount++ line is never reached (cancelled mid-suspend).
+        //
+        // stopTimeoutMs = 100ms keeps the test cheap. The real-time elapsed
+        // here is the actual wait (runBlocking inside releaseResources uses
+        // a real Dispatchers.IO thread, not the testDispatcher — the timeout
+        // is real-time-based by design).
+        val client = MockMatrixClient(hangStop = true)
+        val viewModel = createViewModel(
+            matrixClient = client,
+            roomId = "!test:example.com",
+            stopTimeoutMs = 100L,
+        )
+
+        // If releaseResources doesn't honour stopTimeoutMs, this call hangs
+        // and the test runner kills the JVM after its own (much longer)
+        // timeout. The mere fact of returning is half the assertion.
+        viewModel.releaseResources()
+
+        assertEquals(
+            "stop() body should NOT have completed — withTimeoutOrNull should have cancelled the suspended call",
+            0,
+            client.stopCount,
+        )
     }
 
     @Test
