@@ -11,7 +11,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(application = DeckChatApplication::class)
+@Config(application = DeckChatApplication::class, sdk = [34])
 class DeckChatApplicationTest {
 
     private var handlerBefore: Thread.UncaughtExceptionHandler? = null

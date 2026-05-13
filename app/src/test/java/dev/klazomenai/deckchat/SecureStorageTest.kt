@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * Tests [SecureStorage] with plain SharedPreferences and [PlaintextTokenEncryptor]
@@ -16,6 +17,7 @@ import org.robolectric.RuntimeEnvironment
  * Keystore encryption is verified on-device in instrumented tests (issue #9).
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class SecureStorageTest {
 
     private fun createStorage(): SecureStorage {
