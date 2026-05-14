@@ -153,13 +153,13 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 365 \
             -alias ci-key \
             -dname "CN=CI, O=DeckChat, C=US" \
-            -storepass ci_store_password \
-            -keypass ci_key_password
+            -storepass ci_password \
+            -keypass ci_password
           {
             echo "RELEASE_KEYSTORE_FILE=$GITHUB_WORKSPACE/ci-keystore.jks"
-            echo "RELEASE_KEYSTORE_PASSWORD=ci_store_password"
+            echo "RELEASE_KEYSTORE_PASSWORD=ci_password"
             echo "RELEASE_KEY_ALIAS=ci-key"
-            echo "RELEASE_KEY_PASSWORD=ci_key_password"
+            echo "RELEASE_KEY_PASSWORD=ci_password"
           } >> "$GITHUB_ENV"
 
       - name: Run release instrumented tests
