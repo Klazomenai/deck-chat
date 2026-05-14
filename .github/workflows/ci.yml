@@ -36,7 +36,7 @@ jobs:
           restore-keys: gradle-${{ runner.os }}-
 
       - name: Licence audit (AGPL-compatible deps only)
-        run: nix develop --command ./gradlew :app:licenseeRelease
+        run: nix develop --command ./gradlew :app:licenseeAndroidRelease
 
   build:
     runs-on: ubuntu-latest
