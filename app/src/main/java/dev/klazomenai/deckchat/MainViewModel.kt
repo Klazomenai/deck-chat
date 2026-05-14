@@ -5,6 +5,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -241,14 +242,17 @@ class MainViewModel(
     // Stage strings are set and checked in this file only. Extract to a sealed type
     // when localising UI strings (M2) — see Copilot review on PR #89.
     private fun classifyError(e: Exception): PipelineError {
+        // Rethrow cooperative cancellation so the coroutine framework can honour it.
+        // When viewModelScope is cancelled (releaseResources → cancel-then-close ordering),
+        // CancellationException is what awaitFinalResponse() observes at its receive() call.
+        // Swallowing it here would produce a misleading SttFailed/MatrixFailed state
+        // and break structured-concurrency semantics.
+        if (e is CancellationException) throw e
         if (e is PipelineTimeoutException) return PipelineError.ResponseTimeout
         // ClosedReceiveChannelException fires when `crewMessages` is closed while
-        // `awaitFinalResponse()` is mid-`receive()`. Normally #160's cancel-then-close
-        // ordering means the receive observes CancellationException first, but this
-        // catch handles the defence-in-depth case: an unexpected direct close of
-        // `crewMessages` (e.g. a future caller bypassing `releaseResources()`)
-        // surfaces as a classified "pipeline cancelled" error rather than an
-        // unclassified crash-shaped UI message.
+        // `awaitFinalResponse()` is mid-`receive()` AND cancellation has not yet
+        // propagated. This is the defence-in-depth case for an unexpected direct
+        // close of `crewMessages` (e.g. a future caller bypassing `releaseResources()`).
         if (e is ClosedReceiveChannelException) return PipelineError.PipelineCancelled
         val state = _state.value
         return when {
