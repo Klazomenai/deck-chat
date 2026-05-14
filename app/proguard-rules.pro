@@ -20,3 +20,9 @@
 # references JSR-305 annotations that are not present at runtime. Safe to suppress.
 -dontwarn javax.annotation.Nullable
 -dontwarn javax.annotation.concurrent.GuardedBy
+
+# AndroidX Tracing — used by the test instrumentation runner. R8 strips it from
+# release builds because there are no direct production references; the test APK
+# calls it reflectively via the runner, which causes a NoClassDefFoundError when
+# connectedAndroidTest targets the release build type.
+-keep class androidx.tracing.Trace { *; }
