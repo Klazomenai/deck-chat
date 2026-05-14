@@ -11,6 +11,8 @@
 
 # AndroidX test runner and related infrastructure
 -keep class androidx.test.** { *; }
+# androidx.tracing is used by the test runner but lives outside androidx.test.**
+-keep class androidx.tracing.** { *; }
 
 # Kotlin stdlib — R8 may inline delegates (lazy{}, etc.) and remove the
 # direct references that would otherwise anchor these in the call graph.
