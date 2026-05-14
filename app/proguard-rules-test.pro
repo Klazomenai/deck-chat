@@ -20,3 +20,11 @@
 
 # Kotlin coroutines — used by test helpers and flow/coroutine test utilities.
 -keep class kotlinx.** { *; }
+
+# androidx.core helpers used directly in androidTest classes.
+# R8 inlines ContextCompat.checkSelfPermission() to Context.checkSelfPermission()
+# on minSdk 28+ and may eliminate the class from the main APK dex entirely; test
+# APK references it by name so it must survive in the main APK.
+# NotificationManagerCompat is similarly at risk.
+-keep class androidx.core.content.ContextCompat { *; }
+-keep class androidx.core.app.NotificationManagerCompat { *; }
