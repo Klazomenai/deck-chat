@@ -151,6 +151,14 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // Mirrors release (R8 on, signing via CI keystore) but adds
+        // proguard-rules-test.pro so the test runner and Kotlin/kotlinx
+        // classes are kept. Production release stays tight.
+        create("releaseTest") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            proguardFiles("proguard-rules-test.pro")
+        }
     }
 
     // testOptions block intentionally absent — `unitTests.isReturnDefaultValues`
