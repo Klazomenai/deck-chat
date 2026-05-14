@@ -397,6 +397,7 @@ class MainActivity : AppCompatActivity() {
         is PipelineError.TtsFailed -> getString(R.string.error_tts_failed, error.message)
         is PipelineError.MatrixFailed -> getString(R.string.error_matrix_failed, error.message)
         is PipelineError.ResponseTimeout -> getString(R.string.error_response_timeout)
+        is PipelineError.PipelineCancelled -> getString(R.string.error_pipeline_cancelled)
     }
 
     private fun showPermanentDenialDialog() {

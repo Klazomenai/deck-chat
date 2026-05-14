@@ -512,6 +512,36 @@ class MainViewModelTest {
     }
 
     @Test
+    fun `closing crewMessages mid-await surfaces as PipelineCancelled`() = runTest {
+        // Models the race the Quartermaster's Notes describe: `releaseResources()`
+        // closes `crewMessages` while `awaitFinalResponse()` is mid-`receive()`.
+        // After #160's cancel-then-close ordering, the production race window is
+        // largely closed (the awaiting coroutine observes CancellationException
+        // first), but this test exercises the defence-in-depth path: an
+        // unexpected direct close of `crewMessages` (e.g. a future caller
+        // bypassing `releaseResources()`) must still classify cleanly as
+        // `PipelineCancelled` rather than as an unclassified Pipeline failed.
+        val (viewModel, _) = createOnlineViewModel()
+        testDispatcher.scheduler.advanceUntilIdle() // init + sync
+
+        // Drive pipeline up to `crewMessages.receive()` suspension point.
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.runCurrent() // process event
+        testDispatcher.scheduler.runCurrent() // process pipeline launch + STT + send
+
+        // Close the channel directly — bypasses releaseResources() so
+        // viewModelScope is NOT cancelled and the receive observes the close
+        // as ClosedReceiveChannelException, not CancellationException.
+        viewModel.crewMessages.close()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(
+            PipelineState.Error(PipelineError.PipelineCancelled),
+            viewModel.state.value,
+        )
+    }
+
+    @Test
     fun `single crew message spoken after settling`() = runTest {
         val (viewModel, _) = createOnlineViewModel()
         testDispatcher.scheduler.advanceUntilIdle() // init + sync

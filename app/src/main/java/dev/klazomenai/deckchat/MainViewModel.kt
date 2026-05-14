@@ -11,6 +11,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -241,6 +242,14 @@ class MainViewModel(
     // when localising UI strings (M2) — see Copilot review on PR #89.
     private fun classifyError(e: Exception): PipelineError {
         if (e is PipelineTimeoutException) return PipelineError.ResponseTimeout
+        // ClosedReceiveChannelException fires when `crewMessages` is closed while
+        // `awaitFinalResponse()` is mid-`receive()`. Normally #160's cancel-then-close
+        // ordering means the receive observes CancellationException first, but this
+        // catch handles the defence-in-depth case: an unexpected direct close of
+        // `crewMessages` (e.g. a future caller bypassing `releaseResources()`)
+        // surfaces as a classified "pipeline cancelled" error rather than an
+        // unclassified crash-shaped UI message.
+        if (e is ClosedReceiveChannelException) return PipelineError.PipelineCancelled
         val state = _state.value
         return when {
             state is PipelineState.Processing && state.stage == "Transcribing" ->
