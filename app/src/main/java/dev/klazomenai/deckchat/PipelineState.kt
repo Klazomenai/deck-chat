@@ -29,4 +29,14 @@ sealed class PipelineError {
     data class TtsFailed(val message: String) : PipelineError()
     data class MatrixFailed(val message: String) : PipelineError()
     data object ResponseTimeout : PipelineError()
+
+    /**
+     * Pipeline cancelled mid-flight — typically because the underlying crew
+     * message channel was closed (e.g. ViewModel teardown raced with
+     * `awaitFinalResponse()` mid-`receive()`). Distinguished from generic
+     * Matrix or STT failures so the UI can present a "we're shutting down,
+     * try again" message rather than misleading the user about which stage
+     * broke.
+     */
+    data object PipelineCancelled : PipelineError()
 }

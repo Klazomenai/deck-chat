@@ -47,6 +47,7 @@
     <string name="error_tts_failed">Speech synthesis failed: %1$s</string>
     <string name="error_matrix_failed">Matrix connection failed: %1$s</string>
     <string name="error_response_timeout">Crew response timed out. Try increasing the timeout in Settings.</string>
+    <string name="error_pipeline_cancelled">Pipeline cancelled — try again.</string>
 
     <!-- Permission rationale dialog -->
     <string name="permission_rationale_title">Microphone access</string>
