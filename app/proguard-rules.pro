@@ -21,8 +21,19 @@
 -dontwarn javax.annotation.Nullable
 -dontwarn javax.annotation.concurrent.GuardedBy
 
-# AndroidX Tracing — used by the test instrumentation runner. R8 strips it from
-# release builds because there are no direct production references; the test APK
-# calls it reflectively via the runner, which causes a NoClassDefFoundError when
-# connectedAndroidTest targets the release build type.
+# Classes required when connectedAndroidTest targets the release build type.
+# The test APK runs in the main APK's process and links against the release
+# APK's classloader; R8 must not strip or rename any class the test runner
+# resolves by name at runtime.
+#
+# androidx.tracing.Trace — used by AndroidX test runner; no production references
+# so R8 strips it without this rule.
 -keep class androidx.tracing.Trace { *; }
+#
+# Kotlin stdlib — R8 may inline lazy{} and similar delegates, removing the
+# direct references that would otherwise anchor LazyKt and friends in the
+# call graph. Keep the full public API so the test APK's class resolution
+# succeeds regardless of R8's inlining decisions.
+-keep class kotlin.Lazy { *; }
+-keep class kotlin.LazyKt { *; }
+-keep class kotlin.jvm.internal.** { *; }
