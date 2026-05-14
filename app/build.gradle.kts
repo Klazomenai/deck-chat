@@ -102,6 +102,9 @@ fun computeVersionCode(version: String): Int {
 android {
     namespace = "dev.klazomenai.deckchat"
     compileSdk = 36
+    // Overrideable via -PconnectedTestBuildType=release so CI can run
+    // connectedAndroidTest against a minified release APK (R8 regression gate).
+    testBuildType = (findProperty("connectedTestBuildType") as? String) ?: "debug"
 
     defaultConfig {
         applicationId = "dev.klazomenai.deckchat"
