@@ -28,3 +28,8 @@
 # NotificationManagerCompat is similarly at risk.
 -keep class androidx.core.content.ContextCompat { *; }
 -keep class androidx.core.app.NotificationManagerCompat { *; }
+
+# R$id: R8 inlines R.id.* integer fields in the main APK and removes R$id; the
+# test APK (compiled with non-final R fields by AGP) still references R$id at
+# runtime via Espresso's withId() matchers and finds the class gone.
+-keep class dev.klazomenai.deckchat.R$id { *; }
