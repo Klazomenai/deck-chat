@@ -114,3 +114,72 @@ jobs:
           name: instrumented-test-results
           path: app/build/reports/androidTests/
           retention-days: 14
+
+  # Runs the same instrumented-test suite against a release-typed APK so R8
+  # minification regressions (e.g. Tink protobuf reflection stripping) are
+  # caught in CI rather than on alpha users' devices. Runs in parallel with
+  # instrumented-tests — no extra wall-clock time. The CI keystore uses
+  # throw-away credentials; the production signing key is never present here.
+  connected-release-tests:
+    runs-on: ubuntu-latest
+    needs: license-audit
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/libs.versions.toml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Create CI signing keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$GITHUB_WORKSPACE/ci-keystore.jks" \
+            -keyalg RSA -keysize 2048 -validity 365 \
+            -alias ci-key \
+            -dname "CN=CI, O=DeckChat, C=US" \
+            -storepass ci_store_password \
+            -keypass ci_key_password
+          {
+            echo "RELEASE_KEYSTORE_FILE=$GITHUB_WORKSPACE/ci-keystore.jks"
+            echo "RELEASE_KEYSTORE_PASSWORD=ci_store_password"
+            echo "RELEASE_KEY_ALIAS=ci-key"
+            echo "RELEASE_KEY_PASSWORD=ci_key_password"
+          } >> "$GITHUB_ENV"
+
+      - name: Run release instrumented tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          script: |
+            adb shell wm dismiss-keyguard
+            adb shell settings put global window_animation_scale 0.0
+            adb shell settings put global transition_animation_scale 0.0
+            adb shell settings put global animator_duration_scale 0.0
+            ./gradlew connectedReleaseAndroidTest
+        timeout-minutes: 20
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-instrumented-test-results
+          path: app/build/reports/androidTests/
+          retention-days: 14
