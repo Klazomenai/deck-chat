@@ -498,14 +498,15 @@ class MainViewModelTest {
         sttResult: String = "hello",
         matrixClient: MockMatrixClient = MockMatrixClient(),
         roomId: String = "!room:example.com",
+        responseTimeoutMs: Long = MainViewModel.DEFAULT_RESPONSE_TIMEOUT_MS,
     ): Pair<MainViewModel, MockMatrixClient> {
-        val tts = MockTtsEngine()
         val vm = MainViewModel(
             sttEngine = MockSttEngine(returnText = sttResult),
-            ttsEngine = tts,
+            ttsEngine = MockTtsEngine(),
             matrixClient = matrixClient,
             roomId = roomId,
             audioFileProvider = { audioFile },
+            responseTimeoutMs = responseTimeoutMs,
             ioDispatcher = testDispatcher,
         ).also { viewModels.add(it) }
         return vm to matrixClient
@@ -537,6 +538,36 @@ class MainViewModelTest {
 
         assertEquals(
             PipelineState.Error(PipelineError.PipelineCancelled),
+            viewModel.state.value,
+        )
+    }
+
+    @Test
+    fun `no crew response times out with ResponseTimeout`() = runTest {
+        // Models the bridge-falls-silent path: pipeline reaches crewMessages.receive()
+        // but no crew message ever arrives. withTimeout(responseTimeoutMs) fires,
+        // TimeoutCancellationException is wrapped as PipelineTimeoutException, and
+        // classifyError maps it to PipelineError.ResponseTimeout.
+        //
+        // Uses a small responseTimeoutMs so the test advances past the deadline
+        // in virtual time without blocking real wall-clock time. The virtual-time
+        // mechanics mirror those of the delegation settling tests
+        // (withTimeoutOrNull(DELEGATION_SETTLE_MS) in awaitFinalResponse() is
+        // governed by the same testDispatcher scheduler).
+        val tinyTimeoutMs = 1_000L
+        val (viewModel, _) = createOnlineViewModel(responseTimeoutMs = tinyTimeoutMs)
+        testDispatcher.scheduler.advanceUntilIdle() // init + sync
+
+        RecordingService.emitEvent(ServiceEvent.RecordingStopped)
+        testDispatcher.scheduler.runCurrent() // process event
+        testDispatcher.scheduler.runCurrent() // process pipeline: STT + send, suspend at receive()
+
+        // No crew message sent — advance past the response deadline
+        testDispatcher.scheduler.advanceTimeBy(tinyTimeoutMs + 100)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(
+            PipelineState.Error(PipelineError.ResponseTimeout),
             viewModel.state.value,
         )
     }
