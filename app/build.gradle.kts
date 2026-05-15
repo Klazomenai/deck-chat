@@ -207,6 +207,24 @@ tasks.register<Exec>("downloadTtsModels") {
     }
 }
 
+// AC-#127.4: fails the build if EncryptedSharedPreferences is imported outside MigrationGate.kt.
+// Wired into the standard `check` lifecycle so `./gradlew check` catches violations automatically.
+tasks.register("verifyNoEspOutsideMigration") {
+    description = "Fails if EncryptedSharedPreferences is imported outside MigrationGate.kt (AC-#127.4)"
+    group = "verification"
+    doLast {
+        val violations = fileTree("src/main/java") {
+            include("**/*.kt")
+            exclude("**/MigrationGate.kt")
+        }.filter { file -> file.readText().contains("EncryptedSharedPreferences") }
+        require(violations.files.isEmpty()) {
+            "AC-#127.4 violated: EncryptedSharedPreferences found outside MigrationGate.kt:\n" +
+                violations.joinToString("\n") { "  ${it.relativeTo(projectDir)}" }
+        }
+    }
+}
+tasks.named("check") { dependsOn("verifyNoEspOutsideMigration") }
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

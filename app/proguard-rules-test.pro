@@ -52,6 +52,12 @@
 # runtime via Espresso's withId() matchers and finds the class gone.
 -keep class dev.klazomenai.deckchat.R$id { *; }
 
+# TinkAeadPrefs + MigrationGate: called directly by TinkAeadPrefsKeystoreTest and
+# SecureStorageMigrationTest. Both classes are reachable from the production call graph
+# but R8 may still rename them; the test APK references them by their original names.
+-keep class dev.klazomenai.deckchat.TinkAeadPrefs { *; }
+-keep class dev.klazomenai.deckchat.MigrationGate { *; }
+
 # ListenableFuture (Guava/concurrent-futures): used by Espresso's ActivityScenario;
 # R8 strips the interface when only concrete implementations survive the main APK's
 # call graph (e.g. from matrix-sdk-android transitive usage).
