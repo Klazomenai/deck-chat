@@ -36,7 +36,13 @@ class DeckChatApplication : Application() {
         try {
             runBlocking { MigrationGate.migrateIfNeeded(this@DeckChatApplication) }
         } catch (e: Exception) {
-            Log.e("DeckChat.Migration", "Storage migration failed — proceeding without migration (user may need to re-authenticate)", e)
+            // Only TinkAeadPrefs construction failure reaches here (internal MigrationGate errors
+            // are caught and handled inside migrateIfNeeded). If Tink key material is unavailable,
+            // every subsequent SecureStorage access will also fail — the user will be prompted to
+            // re-authenticate when the first credential read throws rather than at a hard crash.
+            // The broad catch is also required for Robolectric: the JVM has no AndroidKeyStore
+            // provider so TinkAeadPrefs construction always throws in unit tests.
+            Log.e("DeckChat.Migration", "Tink key material unavailable — credential access will fail on first use", e)
         }
         installCrashHandler()
     }

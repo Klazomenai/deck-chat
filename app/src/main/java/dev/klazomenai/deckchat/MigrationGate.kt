@@ -56,7 +56,9 @@ internal object MigrationGate {
 
             if (oldData == null) {
                 // Fresh install or empty old store — mark done and proceed
-                newPrefs.edit().putBoolean(SENTINEL_KEY, true).commit()
+                if (!newPrefs.edit().putBoolean(SENTINEL_KEY, true).commit()) {
+                    Log.e(TAG, "Sentinel write failed for empty/absent old store — will retry on next boot")
+                }
                 return
             }
 

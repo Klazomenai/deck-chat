@@ -207,18 +207,28 @@ tasks.register<Exec>("downloadTtsModels") {
     }
 }
 
-// AC-#127.4: fails the build if EncryptedSharedPreferences is imported outside MigrationGate.kt.
+// AC-#127.4: fails the build if EncryptedSharedPreferences appears in non-comment production code
+// outside MigrationGate.kt. Checks every code line (stripping inline // comments and skipping
+// pure // and KDoc * lines) so wildcard-import-free FQN references are also caught.
+// Note: `import androidx.security.crypto.*` is the one vector not caught — Kotlin/IntelliJ
+// actively converts wildcard imports to explicit ones, so this is an accepted limitation.
 // Wired into the standard `check` lifecycle so `./gradlew check` catches violations automatically.
 tasks.register("verifyNoEspOutsideMigration") {
-    description = "Fails if EncryptedSharedPreferences is imported outside MigrationGate.kt (AC-#127.4)"
+    description = "Fails if EncryptedSharedPreferences appears in non-comment code outside MigrationGate.kt (AC-#127.4)"
     group = "verification"
     doLast {
         val violations = fileTree("src/main/java") {
             include("**/*.kt")
             exclude("**/MigrationGate.kt")
-        }.filter { file -> file.readText().contains("import androidx.security.crypto.EncryptedSharedPreferences") }
+        }.filter { file ->
+            file.readLines().any { line ->
+                val trimmed = line.trim()
+                !trimmed.startsWith("//") && !trimmed.startsWith("*") &&
+                    trimmed.substringBefore("//").contains("EncryptedSharedPreferences")
+            }
+        }
         require(violations.files.isEmpty()) {
-            "AC-#127.4 violated: EncryptedSharedPreferences found outside MigrationGate.kt:\n" +
+            "AC-#127.4 violated: EncryptedSharedPreferences in non-comment code outside MigrationGate.kt:\n" +
                 violations.joinToString("\n") { "  ${it.relativeTo(projectDir)}" }
         }
     }
