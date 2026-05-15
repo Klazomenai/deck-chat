@@ -58,6 +58,18 @@
 -keep class dev.klazomenai.deckchat.TinkAeadPrefs { *; }
 -keep class dev.klazomenai.deckchat.MigrationGate { *; }
 
+# EncryptedSharedPreferences + MasterKey: used by SecureStorageMigrationTest.populateOldStore
+# to set up the pre-migration state. R8 strips these deprecated inner classes from the
+# releaseTest APK even though MigrationGate.readOldPrefs references them, because R8's
+# inner-class reachability analysis does not transitively keep $Inner names from kept methods.
+# Same root cause as RecordingService$Companion (PR #229).
+-keep class androidx.security.crypto.EncryptedSharedPreferences { *; }
+-keep class androidx.security.crypto.EncryptedSharedPreferences$PrefKeyEncryptionScheme { *; }
+-keep class androidx.security.crypto.EncryptedSharedPreferences$PrefValueEncryptionScheme { *; }
+-keep class androidx.security.crypto.MasterKey { *; }
+-keep class androidx.security.crypto.MasterKey$Builder { *; }
+-keep class androidx.security.crypto.MasterKey$KeyScheme { *; }
+
 # ListenableFuture (Guava/concurrent-futures): used by Espresso's ActivityScenario;
 # R8 strips the interface when only concrete implementations survive the main APK's
 # call graph (e.g. from matrix-sdk-android transitive usage).
