@@ -28,8 +28,10 @@ import org.json.JSONArray
  * - Boolean → `b|1` or `b|0`
  * - StringSet → `ss|<JSON array>`
  *
- * [aad] binds ciphertexts to this app installation. Production uses [Context.packageName]
+ * [aad] binds ciphertexts to the app's package identity. Production uses [Context.packageName]
  * so a future package rename intentionally invalidates stored data (see #228 runbook).
+ * Per-installation uniqueness comes from the Tink keyset, generated fresh per install and
+ * wrapped by the Android Keystore master key — not from the AAD value itself.
  *
  * The injectable-primitives primary constructor is the test seam used by [TinkAeadPrefsTest].
  * Production code uses [TinkAeadPrefs(context: Context)].
