@@ -30,7 +30,14 @@ class DeckChatApplication : Application() {
         // One-time migration from EncryptedSharedPreferences to TinkAeadPrefs.
         // Must complete before any SecureStorage access — runBlocking is intentional here
         // (one-time, before any Activity starts, before any other coroutine context exists).
-        runBlocking { MigrationGate.migrateIfNeeded(this@DeckChatApplication) }
+        // Failure is caught and logged per B3: flaky or unavailable Keystore results in
+        // the user re-authenticating rather than a hard crash. Robolectric unit tests also
+        // hit this path; they have no AndroidKeyStore provider and throw here.
+        try {
+            runBlocking { MigrationGate.migrateIfNeeded(this@DeckChatApplication) }
+        } catch (e: Exception) {
+            Log.e("DeckChat.Migration", "Storage migration failed — proceeding without migration (user may need to re-authenticate)", e)
+        }
         installCrashHandler()
     }
 
