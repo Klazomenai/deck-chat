@@ -1,5 +1,6 @@
 package dev.klazomenai.deckchat
 
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -29,15 +30,15 @@ class MigrationGateTest {
     @Test
     fun `concurrent callers both complete without deadlock`() = runBlocking {
         val context = RuntimeEnvironment.getApplication()
-        var completionCount = 0
+        val completionCount = AtomicInteger(0)
 
         val d1 = async(Dispatchers.IO) {
             try { MigrationGate.migrateIfNeeded(context) } catch (_: Exception) { }
-            completionCount++
+            completionCount.incrementAndGet()
         }
         val d2 = async(Dispatchers.IO) {
             try { MigrationGate.migrateIfNeeded(context) } catch (_: Exception) { }
-            completionCount++
+            completionCount.incrementAndGet()
         }
 
         withTimeout(5_000L) {
@@ -45,7 +46,7 @@ class MigrationGateTest {
             d2.await()
         }
 
-        assertEquals("Both callers must complete without deadlock", 2, completionCount)
+        assertEquals("Both callers must complete without deadlock", 2, completionCount.get())
     }
 
     @Test

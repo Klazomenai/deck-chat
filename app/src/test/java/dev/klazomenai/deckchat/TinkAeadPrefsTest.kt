@@ -215,10 +215,9 @@ class TinkAeadPrefsTest {
 
     // ── getAll ────────────────────────────────────────────────────────────────
 
-    @Test
-    fun `getAll returns empty map regardless of stored entries`() {
-        prefs.edit().putString("k1", "v1").putString("k2", "v2").commit()
-        assertTrue(prefs.getAll().isEmpty())
+    @Test(expected = UnsupportedOperationException::class)
+    fun `getAll throws UnsupportedOperationException`() {
+        prefs.getAll()
     }
 
     // ── Backing store isolation ───────────────────────────────────────────────

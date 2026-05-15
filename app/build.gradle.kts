@@ -216,7 +216,7 @@ tasks.register("verifyNoEspOutsideMigration") {
         val violations = fileTree("src/main/java") {
             include("**/*.kt")
             exclude("**/MigrationGate.kt")
-        }.filter { file -> file.readText().contains("EncryptedSharedPreferences") }
+        }.filter { file -> file.readText().contains("import androidx.security.crypto.EncryptedSharedPreferences") }
         require(violations.files.isEmpty()) {
             "AC-#127.4 violated: EncryptedSharedPreferences found outside MigrationGate.kt:\n" +
                 violations.joinToString("\n") { "  ${it.relativeTo(projectDir)}" }

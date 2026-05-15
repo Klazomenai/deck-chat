@@ -60,9 +60,13 @@ internal object MigrationGate {
                 return
             }
 
-            // (2) write-all + sentinel; commit() is synchronous so next read sees migrated data
+            // (2) write-all + sentinel; commit() is synchronous so next read sees migrated data.
+            // Skip keys already present — if migration failed on a prior boot and the user
+            // re-authenticated in the meantime, their new credentials take precedence over the
+            // stale values in the old ESP store.
             val editor = newPrefs.edit()
             for ((key, value) in oldData) {
+                if (newPrefs.contains(key)) continue
                 when (value) {
                     is String -> editor.putString(key, value)
                     is Boolean -> editor.putBoolean(key, value)

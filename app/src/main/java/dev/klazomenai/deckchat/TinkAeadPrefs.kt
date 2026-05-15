@@ -107,22 +107,30 @@ class TinkAeadPrefs(
     override fun getBoolean(key: String, defValue: Boolean): Boolean {
         val raw = backing.getString(encKey(key), null) ?: return defValue
         val (tag, encoded) = decVal(raw) ?: return defValue
-        return if (tag == "b") encoded == "1" else defValue
+        return if (tag == "b") when (encoded) { "1" -> true; "0" -> false; else -> defValue } else defValue
     }
 
-    // Backing keys are encrypted; reverse-decryption would require iterating all entries.
-    // SecureStorage does not call getAll(); MigrationGate calls it only on the old ESP.
-    override fun getAll(): Map<String, *> = emptyMap<String, Nothing>()
+    // getAll() cannot be implemented without iterating all backing entries and decrypting each
+    // key. No production code in this app enumerates prefs; callers must use typed getters.
+    override fun getAll(): Map<String, *> = throw UnsupportedOperationException(
+        "TinkAeadPrefs.getAll() is not supported — use typed getters (getString, getInt, …)"
+    )
 
     override fun edit(): SharedPreferences.Editor = EncryptedEditor()
 
+    // Listener callbacks receive encrypted key names, not plaintext keys, which makes them
+    // unusable. No production code in this app registers listeners on TinkAeadPrefs.
     override fun registerOnSharedPreferenceChangeListener(
         listener: SharedPreferences.OnSharedPreferenceChangeListener,
-    ) = backing.registerOnSharedPreferenceChangeListener(listener)
+    ): Unit = throw UnsupportedOperationException(
+        "TinkAeadPrefs.registerOnSharedPreferenceChangeListener() is not supported"
+    )
 
     override fun unregisterOnSharedPreferenceChangeListener(
         listener: SharedPreferences.OnSharedPreferenceChangeListener,
-    ) = backing.unregisterOnSharedPreferenceChangeListener(listener)
+    ): Unit = throw UnsupportedOperationException(
+        "TinkAeadPrefs.unregisterOnSharedPreferenceChangeListener() is not supported"
+    )
 
     // ── Editor ───────────────────────────────────────────────────────────────
 
