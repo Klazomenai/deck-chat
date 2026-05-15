@@ -25,7 +25,7 @@ plugins {
  * alternative, or (b) explicitly extend the allowlist with a `because`
  * justification — never silently.
  *
- * The CI step `./gradlew :app:licenseeRelease` runs this gate against
+ * The CI step `./gradlew :app:licenseeAndroidRelease` runs this gate against
  * the release configuration (the actual shipped artefact).
  */
 licensee {

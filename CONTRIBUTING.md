@@ -65,7 +65,7 @@ devenv shell                       # enter the dev shell (full toolchain + emula
 ./gradlew test                     # unit tests (Robolectric)
 ./gradlew assembleDebug            # debug APK
 ./gradlew assembleRelease          # release APK (R8 validation)
-./gradlew :app:licenseeRelease     # licence audit (matches CI)
+./gradlew :app:licenseeAndroidRelease     # licence audit (matches CI)
 ```
 
 The full README covers prerequisites, Android SDK provisioning, emulator
