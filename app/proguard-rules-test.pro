@@ -33,3 +33,8 @@
 # test APK (compiled with non-final R fields by AGP) still references R$id at
 # runtime via Espresso's withId() matchers and finds the class gone.
 -keep class dev.klazomenai.deckchat.R$id { *; }
+
+# ListenableFuture (Guava/concurrent-futures): used by Espresso's ActivityScenario;
+# R8 strips the interface when only concrete implementations survive the main APK's
+# call graph (e.g. from matrix-sdk-android transitive usage).
+-keep class com.google.common.util.concurrent.ListenableFuture { *; }
