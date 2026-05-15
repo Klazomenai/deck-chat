@@ -38,6 +38,11 @@
 # etc.) so R8 never strips it, but does rename the class and its property accessors
 # (e.g. setHomeserverUrl → some obfuscated name). Tests access original names.
 -keep class dev.klazomenai.deckchat.SecureStorage { *; }
+# SecureStorage$KeystoreTokenEncryptor: called directly from SecureStorageMigrationTest to
+# pre-create the token Keystore alias before migration. Same inner-class stripping root cause
+# as RecordingService$Companion (PR #229) — `{ *; }` on the outer class does not protect
+# nested class names.
+-keep class dev.klazomenai.deckchat.SecureStorage$KeystoreTokenEncryptor { *; }
 #
 # RecordingService companion: R8 renames RecordingService$Companion and its methods.
 # The unminified test APK calls setOnRecordingCompleteListener via the Companion field
