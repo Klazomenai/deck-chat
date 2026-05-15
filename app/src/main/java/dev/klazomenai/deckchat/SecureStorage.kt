@@ -6,8 +6,6 @@ import android.security.keystore.KeyGenParameterSpec
 import android.util.Log
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -17,17 +15,20 @@ import javax.crypto.spec.GCMParameterSpec
 /**
  * Secure storage for DeckChat configuration and credentials.
  *
- * - General config (homeserver URL, user ID): [EncryptedSharedPreferences]
- *   with AES256-SIV key encryption and AES256-GCM value encryption.
- * - Sensitive tokens (Matrix session): AES-GCM encryption via Android Keystore
- *   with StrongBox fallback. Ciphertext + IV stored in the encrypted prefs.
+ * - General config (homeserver URL, user ID, etc.): [TinkAeadPrefs] — key names encrypted
+ *   with AES-SIV (deterministic), values with AES-GCM (random IV), master keyset wrapped
+ *   by Android Keystore (`deckchat_aead_master`). AAD = package name.
+ * - Sensitive tokens (Matrix session): [KeystoreTokenEncryptor] — raw AES-GCM via Keystore
+ *   alias `deckchat_token_key`, stored inside the [TinkAeadPrefs] envelope (double-encrypted).
+ *
+ * See [SecureStorageTiers] for the full tier hierarchy and invariants.
  *
  * No hardcoded URLs or credentials — all configured at runtime via SettingsActivity.
  *
- * @param prefs injectable SharedPreferences — production uses EncryptedSharedPreferences,
+ * @param prefs injectable [SharedPreferences] — production uses [TinkAeadPrefs],
  *   tests can inject a plain SharedPreferences.
  * @param tokenEncryptor injectable encryption strategy — production uses Android Keystore,
- *   tests can use a passthrough.
+ *   tests can use [PlaintextTokenEncryptor].
  */
 class SecureStorage(
     private val prefs: SharedPreferences,
@@ -35,15 +36,7 @@ class SecureStorage(
 ) {
 
     constructor(context: Context) : this(
-        prefs = EncryptedSharedPreferences.create(
-            context,
-            PREFS_NAME,
-            MasterKey.Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build(),
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        ),
+        prefs = TinkAeadPrefs(context),
     )
 
     // --- General config ---
@@ -218,7 +211,6 @@ class SecureStorage(
 
     companion object {
         private const val TAG = "DeckChat.SecureStorage"
-        private const val PREFS_NAME = "deckchat_prefs"
         private const val KEYSTORE_ALIAS = "deckchat_token_key"
         private const val KEY_HOMESERVER_URL = "homeserver_url"
         private const val KEY_USER_ID = "user_id"

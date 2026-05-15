@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Explicit empty backup/transfer rule set for API 31+ (Android 12+). Disables
+    both cloud backup (Google Drive) and device-to-device transfer — the two
+    exfiltration vectors controlled by this file. Both child elements present-but-empty
+    means "no cloud backup and no device transfer", which is more self-documenting
+    than the fully-empty <data-extraction-rules/> form.
+
+    android:allowBackup="false" in the manifest handles the API ≤ 30 path
+    (where adb backup and the legacy backup agent apply).
+    This file is referenced via android:dataExtractionRules="@xml/data_extraction_rules"
+    for API 31+ forward-compatibility.
+
+    Refs #201
+-->
+<data-extraction-rules>
+    <cloud-backup/>
+    <device-transfer/>
+</data-extraction-rules>

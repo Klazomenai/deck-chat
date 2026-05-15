@@ -38,6 +38,11 @@
 # etc.) so R8 never strips it, but does rename the class and its property accessors
 # (e.g. setHomeserverUrl → some obfuscated name). Tests access original names.
 -keep class dev.klazomenai.deckchat.SecureStorage { *; }
+# SecureStorage$KeystoreTokenEncryptor: called directly from SecureStorageMigrationTest to
+# pre-create the token Keystore alias before migration. Same inner-class stripping root cause
+# as RecordingService$Companion (PR #229) — `{ *; }` on the outer class does not protect
+# nested class names.
+-keep class dev.klazomenai.deckchat.SecureStorage$KeystoreTokenEncryptor { *; }
 #
 # RecordingService companion: R8 renames RecordingService$Companion and its methods.
 # The unminified test APK calls setOnRecordingCompleteListener via the Companion field
@@ -51,6 +56,24 @@
 # test APK (compiled with non-final R fields by AGP) still references R$id at
 # runtime via Espresso's withId() matchers and finds the class gone.
 -keep class dev.klazomenai.deckchat.R$id { *; }
+
+# TinkAeadPrefs + MigrationGate: called directly by TinkAeadPrefsKeystoreTest and
+# SecureStorageMigrationTest. Both classes are reachable from the production call graph
+# but R8 may still rename them; the test APK references them by their original names.
+-keep class dev.klazomenai.deckchat.TinkAeadPrefs { *; }
+-keep class dev.klazomenai.deckchat.MigrationGate { *; }
+
+# EncryptedSharedPreferences + MasterKey: used by SecureStorageMigrationTest.populateOldStore
+# to set up the pre-migration state. R8 strips these deprecated inner classes from the
+# releaseTest APK even though MigrationGate.readOldPrefs references them, because R8's
+# inner-class reachability analysis does not transitively keep $Inner names from kept methods.
+# Same root cause as RecordingService$Companion (PR #229).
+-keep class androidx.security.crypto.EncryptedSharedPreferences { *; }
+-keep class androidx.security.crypto.EncryptedSharedPreferences$PrefKeyEncryptionScheme { *; }
+-keep class androidx.security.crypto.EncryptedSharedPreferences$PrefValueEncryptionScheme { *; }
+-keep class androidx.security.crypto.MasterKey { *; }
+-keep class androidx.security.crypto.MasterKey$Builder { *; }
+-keep class androidx.security.crypto.MasterKey$KeyScheme { *; }
 
 # ListenableFuture (Guava/concurrent-futures): used by Espresso's ActivityScenario;
 # R8 strips the interface when only concrete implementations survive the main APK's

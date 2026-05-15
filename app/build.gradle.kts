@@ -207,6 +207,34 @@ tasks.register<Exec>("downloadTtsModels") {
     }
 }
 
+// AC-#127.4: fails the build if EncryptedSharedPreferences appears in non-comment production code
+// outside MigrationGate.kt. Checks every code line (stripping inline // comments and skipping
+// pure // and KDoc * lines) so wildcard-import-free FQN references are also caught.
+// Note: `import androidx.security.crypto.*` is the one vector not caught — Kotlin/IntelliJ
+// actively converts wildcard imports to explicit ones, so this is an accepted limitation.
+// Wired into the standard `check` lifecycle so `./gradlew check` catches violations automatically.
+tasks.register("verifyNoEspOutsideMigration") {
+    description = "Fails if EncryptedSharedPreferences appears in non-comment code outside MigrationGate.kt (AC-#127.4)"
+    group = "verification"
+    doLast {
+        val violations = fileTree("src/main/java") {
+            include("**/*.kt")
+            exclude("**/MigrationGate.kt")
+        }.filter { file ->
+            file.readLines().any { line ->
+                val trimmed = line.trim()
+                !trimmed.startsWith("//") && !trimmed.startsWith("*") && !trimmed.startsWith("/*") &&
+                    trimmed.substringBefore("//").contains("EncryptedSharedPreferences")
+            }
+        }
+        require(violations.files.isEmpty()) {
+            "AC-#127.4 violated: EncryptedSharedPreferences in non-comment code outside MigrationGate.kt:\n" +
+                violations.joinToString("\n") { "  ${it.relativeTo(projectDir)}" }
+        }
+    }
+}
+tasks.named("check") { dependsOn("verifyNoEspOutsideMigration") }
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -216,6 +244,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.tink.android)
     implementation(libs.matrix.sdk.android)
     implementation(libs.sherpa.onnx.android)
     implementation(libs.kotlinx.coroutines.android)

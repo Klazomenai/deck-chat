@@ -16,7 +16,11 @@
 # These code paths are never reached (JNA detects Android at runtime via Platform.ANDROID).
 -dontwarn java.awt.**
 
-# Google Tink (transitive via androidx.security:security-crypto / EncryptedSharedPreferences)
-# references JSR-305 annotations that are not present at runtime. Safe to suppress.
+# Google Tink — protobuf reflection is used by AndroidKeysetManager to serialise and
+# deserialise keysets. R8 strips proto classes without this rule, causing a runtime crash
+# in the release build on first TinkAeadPrefs access. Verified via connectedReleaseAndroidTest.
+-keep class com.google.crypto.tink.proto.** { *; }
+
+# Tink references JSR-305 annotations not present at runtime. Safe to suppress.
 -dontwarn javax.annotation.Nullable
 -dontwarn javax.annotation.concurrent.GuardedBy
