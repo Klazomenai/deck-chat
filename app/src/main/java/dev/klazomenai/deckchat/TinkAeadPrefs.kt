@@ -40,8 +40,10 @@ class TinkAeadPrefs(
     private val backing: SharedPreferences,
     private val aead: Aead,
     private val daead: DeterministicAead,
-    private val aad: ByteArray,
+    aad: ByteArray,
 ) : SharedPreferences {
+
+    private val aad: ByteArray = aad.copyOf()
 
     constructor(context: Context) : this(
         backing = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
