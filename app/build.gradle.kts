@@ -223,7 +223,7 @@ tasks.register("verifyNoEspOutsideMigration") {
         }.filter { file ->
             file.readLines().any { line ->
                 val trimmed = line.trim()
-                !trimmed.startsWith("//") && !trimmed.startsWith("*") &&
+                !trimmed.startsWith("//") && !trimmed.startsWith("*") && !trimmed.startsWith("/*") &&
                     trimmed.substringBefore("//").contains("EncryptedSharedPreferences")
             }
         }
