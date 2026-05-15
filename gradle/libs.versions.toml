@@ -4,7 +4,8 @@ agp            = "9.1.0"
 coreKtx        = "1.18.0"
 appcompat      = "1.7.1"
 preferenceKtx  = "1.2.1"
-securityCrypto = "1.1.0"    # final release — deprecated in 1.1.0; no further updates; used for EncryptedSharedPreferences
+securityCrypto = "1.1.0"    # retained for MigrationGate one-time read path only; all new writes use TinkAeadPrefs; drop per F1 after installs have migrated
+tink           = "1.8.0"    # pinned to match transitive version from security-crypto; upgrade to latest stable via follow-up (Q1 from #127 sub-plan)
 sherpaOnnx     = "v1.12.29"  # JitPack requires 'v' prefix (matches upstream git tags)
 matrixRustSdk  = "26.03.19"
 material       = "1.12.0"
@@ -25,6 +26,7 @@ androidx-core-ktx        = { group = "androidx.core",                name = "cor
 androidx-appcompat       = { group = "androidx.appcompat",            name = "appcompat",         version.ref = "appcompat" }
 androidx-preference-ktx  = { group = "androidx.preference",          name = "preference-ktx",    version.ref = "preferenceKtx" }
 androidx-security-crypto = { group = "androidx.security",             name = "security-crypto",   version.ref = "securityCrypto" }
+tink-android             = { group = "com.google.crypto.tink",         name = "tink-android",      version.ref = "tink" }
 google-material              = { group = "com.google.android.material", name = "material",                  version.ref = "material" }
 androidx-constraintlayout    = { group = "androidx.constraintlayout",  name = "constraintlayout",           version.ref = "constraintlayout" }
 androidx-lifecycle-viewmodel = { group = "androidx.lifecycle",          name = "lifecycle-viewmodel-ktx",    version.ref = "lifecycle" }

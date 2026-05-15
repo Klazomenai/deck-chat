@@ -3,6 +3,7 @@ package dev.klazomenai.deckchat
 import android.app.Application
 import android.util.Log
 import android.os.Process
+import kotlinx.coroutines.runBlocking
 
 /**
  * Application subclass that installs a global [Thread.UncaughtExceptionHandler].
@@ -16,8 +17,20 @@ import android.os.Process
  */
 class DeckChatApplication : Application() {
 
+    /**
+     * App-wide singleton SecureStorage. Lazy so the Tink keyset load + Keystore round-trip
+     * happens once and is shared across all callers. Call-site refactor (rewriting the five
+     * dispersed construction sites to use this property) lands in the sibling PR for #226 —
+     * this PR adds the property only.
+     */
+    val secureStorage: SecureStorage by lazy { SecureStorage(applicationContext) }
+
     override fun onCreate() {
         super.onCreate()
+        // One-time migration from EncryptedSharedPreferences to TinkAeadPrefs.
+        // Must complete before any SecureStorage access — runBlocking is intentional here
+        // (one-time, before any Activity starts, before any other coroutine context exists).
+        runBlocking { MigrationGate.migrateIfNeeded(this@DeckChatApplication) }
         installCrashHandler()
     }
 

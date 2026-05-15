@@ -28,7 +28,9 @@
         android:name=".DeckChatApplication"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.DeckChat">
+        android:theme="@style/Theme.DeckChat"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
 
         <activity
             android:name=".MainActivity"

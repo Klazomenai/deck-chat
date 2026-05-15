@@ -216,6 +216,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.tink.android)
     implementation(libs.matrix.sdk.android)
     implementation(libs.sherpa.onnx.android)
     implementation(libs.kotlinx.coroutines.android)
