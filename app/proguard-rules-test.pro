@@ -29,6 +29,24 @@
 -keep class androidx.core.content.ContextCompat { *; }
 -keep class androidx.core.app.NotificationManagerCompat { *; }
 
+# Production classes that R8 obfuscates (renames) in the release build.
+# The unminified test APK references these by their original names, so they must
+# retain their names in the releaseTest main APK. Production release remains free
+# to obfuscate — production callers are also renamed consistently by R8.
+#
+# SecureStorage: heavily referenced from production code (MainActivity, SettingsActivity,
+# etc.) so R8 never strips it, but does rename the class and its property accessors
+# (e.g. setHomeserverUrl → some obfuscated name). Tests access original names.
+-keep class dev.klazomenai.deckchat.SecureStorage { *; }
+#
+# RecordingService.Companion: R8 devirtualises companion-object calls to static
+# dispatch and removes the Companion field from RecordingService. The unminified
+# test APK still accesses setOnRecordingCompleteListener via RecordingService.Companion,
+# so the field must survive in the releaseTest build.
+-keepclassmembers class dev.klazomenai.deckchat.RecordingService {
+    static dev.klazomenai.deckchat.RecordingService$Companion Companion;
+}
+
 # R$id: R8 inlines R.id.* integer fields in the main APK and removes R$id; the
 # test APK (compiled with non-final R fields by AGP) still references R$id at
 # runtime via Espresso's withId() matchers and finds the class gone.

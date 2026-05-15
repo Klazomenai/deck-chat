@@ -6,7 +6,6 @@ import android.security.keystore.KeyGenParameterSpec
 import android.util.Log
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
-import androidx.annotation.Keep
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import java.security.KeyStore
@@ -30,7 +29,6 @@ import javax.crypto.spec.GCMParameterSpec
  * @param tokenEncryptor injectable encryption strategy — production uses Android Keystore,
  *   tests can use a passthrough.
  */
-@Keep
 class SecureStorage(
     private val prefs: SharedPreferences,
     private val tokenEncryptor: TokenEncryptor = KeystoreTokenEncryptor(),

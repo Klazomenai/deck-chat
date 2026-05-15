@@ -14,7 +14,6 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.IBinder
-import androidx.annotation.Keep
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -254,7 +253,6 @@ class RecordingService : Service() {
         fun onRecordingComplete(audioFile: File)
     }
 
-    @Keep
     companion object {
         const val ACTION_START = "dev.klazomenai.deckchat.ACTION_START_RECORDING"
         const val ACTION_STOP = "dev.klazomenai.deckchat.ACTION_STOP_RECORDING"
