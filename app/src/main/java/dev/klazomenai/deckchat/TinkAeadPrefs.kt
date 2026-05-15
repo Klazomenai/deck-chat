@@ -82,8 +82,10 @@ class TinkAeadPrefs(
         val raw = backing.getString(encKey(key), null) ?: return defValues
         val (tag, encoded) = decVal(raw) ?: return defValues
         if (tag != "ss") return defValues
-        val arr = JSONArray(encoded)
-        return (0 until arr.length()).mapTo(LinkedHashSet()) { arr.getString(it) }
+        return try {
+            val arr = JSONArray(encoded)
+            (0 until arr.length()).mapTo(LinkedHashSet()) { arr.getString(it) }
+        } catch (_: Exception) { defValues }
     }
 
     override fun getInt(key: String, defValue: Int): Int {

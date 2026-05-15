@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -49,6 +50,8 @@ internal object MigrationGate {
             // A throw here means no sentinel is written — next boot retries the migration.
             val oldData: Map<String, *>? = try {
                 readOldPrefs(context)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.w(TAG, "Could not read old store — will retry on next boot", e)
                 return
