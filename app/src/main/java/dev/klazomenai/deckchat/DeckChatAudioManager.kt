@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
+import androidx.annotation.Keep
 
 /**
  * Routes audio to/from Bluetooth SCO headset.
@@ -20,6 +21,7 @@ import android.os.Build
  * runtime before calling [routeToBluetooth] — returns false if no
  * Bluetooth SCO device is available.
  */
+@Keep
 class DeckChatAudioManager(context: Context) {
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager

@@ -25,7 +25,7 @@ plugins {
  * alternative, or (b) explicitly extend the allowlist with a `because`
  * justification — never silently.
  *
- * The CI step `./gradlew :app:licenseeRelease` runs this gate against
+ * The CI step `./gradlew :app:licenseeAndroidRelease` runs this gate against
  * the release configuration (the actual shipped artefact).
  */
 licensee {
@@ -102,6 +102,9 @@ fun computeVersionCode(version: String): Int {
 android {
     namespace = "dev.klazomenai.deckchat"
     compileSdk = 36
+    // Overrideable via -PconnectedTestBuildType=release so CI can run
+    // connectedAndroidTest against a minified release APK (R8 regression gate).
+    testBuildType = (findProperty("connectedTestBuildType") as? String) ?: "debug"
 
     defaultConfig {
         applicationId = "dev.klazomenai.deckchat"
@@ -147,6 +150,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        // Mirrors release (R8 on, signing via CI keystore) but adds
+        // proguard-rules-test.pro so the test runner and Kotlin/kotlinx
+        // classes are kept. Production release stays tight.
+        create("releaseTest") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            proguardFiles("proguard-rules-test.pro")
         }
     }
 
