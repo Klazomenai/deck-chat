@@ -63,6 +63,16 @@
 -keep class dev.klazomenai.deckchat.TinkAeadPrefs { *; }
 -keep class dev.klazomenai.deckchat.MigrationGate { *; }
 
+# DeckChatApplication: R8 keeps the class itself (manifest reference) but may rename
+# members including the `secureStorage` lazy property and its backing delegate field.
+# SettingsActivity, OnboardingActivity and MainActivity all access
+# `(application as DeckChatApplication).secureStorage` — if R8 renames the lazy
+# backing field or its initialiser lambda, the initialisation may fail on the first
+# access during instrumented tests, causing an uncaught exception and a crash dialog
+# that steals window focus (manifests as RootViewWithoutFocusException in Espresso).
+# Keeping the class with { *; } freezes all member names and prevents the mismatch.
+-keep class dev.klazomenai.deckchat.DeckChatApplication { *; }
+
 # EncryptedSharedPreferences + MasterKey: used by SecureStorageMigrationTest.populateOldStore
 # to set up the pre-migration state. R8 strips these deprecated inner classes from the
 # releaseTest APK even though MigrationGate.readOldPrefs references them, because R8's
