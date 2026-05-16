@@ -63,18 +63,9 @@
 -keep class dev.klazomenai.deckchat.TinkAeadPrefs { *; }
 -keep class dev.klazomenai.deckchat.MigrationGate { *; }
 
-# DeckChatApplication: R8 keeps the class itself (manifest reference) but applies
-# member-level optimisations (dead-code elimination, lambda rewriting) to members it
-# does not see accessed from outside the main APK. In the releaseTest build this breaks
-# SettingsActivityTest: all three methods fail with RootViewWithoutFocusException (crash
-# dialog stealing window focus) on the first `secureStorage` lazy initialisation inside
-# SettingsActivity.onCreate(). The crash is specific to the R8 build and to the test
-# ordering where TinkAeadPrefsKeystoreTest.tearDown() has just cleared the Keystore entry
-# immediately before SettingsActivityTest runs (R8 changes DEX class ordering vs debug).
-# The exact transformation was not isolated from bytecode inspection; { *; } is a
-# conservative fence that prevents any member-level optimisation from affecting the
-# secureStorage lazy-initialisation path or the installCrashHandler wiring.
--keep class dev.klazomenai.deckchat.DeckChatApplication { *; }
+# DeckChatApplication: keep rule moved to proguard-rules.pro so that the production
+# release build and the releaseTest build apply the same R8 constraints. See
+# proguard-rules.pro for the rationale.
 
 # EncryptedSharedPreferences + MasterKey: used by SecureStorageMigrationTest.populateOldStore
 # to set up the pre-migration state. R8 strips these deprecated inner classes from the
