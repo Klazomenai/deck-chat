@@ -63,14 +63,17 @@
 -keep class dev.klazomenai.deckchat.TinkAeadPrefs { *; }
 -keep class dev.klazomenai.deckchat.MigrationGate { *; }
 
-# DeckChatApplication: R8 keeps the class itself (manifest reference) but may rename
-# members including the `secureStorage` lazy property and its backing delegate field.
-# SettingsActivity, OnboardingActivity and MainActivity all access
-# `(application as DeckChatApplication).secureStorage` — if R8 renames the lazy
-# backing field or its initialiser lambda, the initialisation may fail on the first
-# access during instrumented tests, causing an uncaught exception and a crash dialog
-# that steals window focus (manifests as RootViewWithoutFocusException in Espresso).
-# Keeping the class with { *; } freezes all member names and prevents the mismatch.
+# DeckChatApplication: R8 keeps the class itself (manifest reference) but applies
+# member-level optimisations (dead-code elimination, lambda rewriting) to members it
+# does not see accessed from outside the main APK. In the releaseTest build this breaks
+# SettingsActivityTest: all three methods fail with RootViewWithoutFocusException (crash
+# dialog stealing window focus) on the first `secureStorage` lazy initialisation inside
+# SettingsActivity.onCreate(). The crash is specific to the R8 build and to the test
+# ordering where TinkAeadPrefsKeystoreTest.tearDown() has just cleared the Keystore entry
+# immediately before SettingsActivityTest runs (R8 changes DEX class ordering vs debug).
+# The exact transformation was not isolated from bytecode inspection; { *; } is a
+# conservative fence that prevents any member-level optimisation from affecting the
+# secureStorage lazy-initialisation path or the installCrashHandler wiring.
 -keep class dev.klazomenai.deckchat.DeckChatApplication { *; }
 
 # EncryptedSharedPreferences + MasterKey: used by SecureStorageMigrationTest.populateOldStore
