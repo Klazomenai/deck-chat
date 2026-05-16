@@ -16,17 +16,14 @@
 # These code paths are never reached (JNA detects Android at runtime via Platform.ANDROID).
 -dontwarn java.awt.**
 
-# DeckChatApplication: R8 applies member-level optimisations to the class that change
-# the initialisation timing of the `secureStorage` lazy property. The most likely
-# transformation is that R8 initialises the lazy eagerly during Application.onCreate()
-# rather than deferring to first access. In production this is harmless (the Keystore
-# key created by MigrationGate is never invalidated between onCreate and first access),
-# but in the releaseTest build TinkAeadPrefsKeystoreTest.tearDown() deletes the Keystore
-# entry between process startup and the first SettingsActivity launch — leaving the
-# eagerly-cached TinkAeadPrefs holding a reference to a deleted Keystore key, which
-# throws on first use and produces RootViewWithoutFocusException in Espresso.
-# Rule belongs in the production ProGuard config (not test-only) so that releaseTest
-# validates the same build as production.
+# DeckChatApplication: without this rule, all three SettingsActivityTest methods fail
+# with RootViewWithoutFocusException in the releaseTest build (crash dialog stealing
+# window focus on the first `secureStorage` lazy initialisation inside
+# SettingsActivity.onCreate()). The failure is consistent and reproducible: it occurs
+# specifically after TinkAeadPrefsKeystoreTest.tearDown() has cleared the Keystore entry,
+# and only in the R8 build — not in the debug build. The exact member-level R8
+# transformation was not isolated from bytecode inspection. Rule is placed here (not in
+# proguard-rules-test.pro) so that releaseTest validates the same build as production.
 -keep class dev.klazomenai.deckchat.DeckChatApplication { *; }
 
 # Google Tink — protobuf reflection is used by AndroidKeysetManager to serialise and
