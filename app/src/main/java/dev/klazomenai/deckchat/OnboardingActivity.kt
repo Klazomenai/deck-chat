@@ -26,7 +26,7 @@ import kotlinx.coroutines.withContext
 
 class OnboardingActivity : AppCompatActivity() {
 
-    private lateinit var storage: SecureStorage
+    private val storage get() = (application as DeckChatApplication).secureStorage
     private var currentStep = 0
 
     private lateinit var stepViews: List<View>
@@ -46,8 +46,6 @@ class OnboardingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_onboarding)
-
-        storage = SecureStorage(this)
 
         stepIndicator = findViewById(R.id.step_indicator)
         btnBack = findViewById(R.id.btn_back)

@@ -63,6 +63,10 @@
 -keep class dev.klazomenai.deckchat.TinkAeadPrefs { *; }
 -keep class dev.klazomenai.deckchat.MigrationGate { *; }
 
+# DeckChatApplication: keep rule moved to proguard-rules.pro so that the production
+# release build and the releaseTest build apply the same R8 constraints. See
+# proguard-rules.pro for the rationale.
+
 # EncryptedSharedPreferences + MasterKey: used by SecureStorageMigrationTest.populateOldStore
 # to set up the pre-migration state. R8 strips these deprecated inner classes from the
 # releaseTest APK even though MigrationGate.readOldPrefs references them, because R8's

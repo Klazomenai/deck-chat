@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels {
         val appContext = applicationContext
-        val storage = SecureStorage(appContext)
+        val storage = (application as DeckChatApplication).secureStorage
         val sttEngine = SherpaOnnxSttEngine(appContext)
         val ttsEngine = SherpaOnnxTtsEngine(appContext)
         val matrixClient: MatrixClient? = if (storage.hasSession()) RustMatrixClient(appContext, storage) else null
@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
             responseTimeoutMs = timeoutMs,
         )
     }
-    private val storage by lazy { SecureStorage(applicationContext) }
+    private val storage get() = (application as DeckChatApplication).secureStorage
     private var currentIndicatorColor: Int = 0
     private var colorAnimator: ValueAnimator? = null
     private var debugMode = false
@@ -70,7 +70,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (!SecureStorage(this).onboardingComplete) {
+        if (!storage.onboardingComplete) {
             startActivity(Intent(this, OnboardingActivity::class.java))
             finish()
             return

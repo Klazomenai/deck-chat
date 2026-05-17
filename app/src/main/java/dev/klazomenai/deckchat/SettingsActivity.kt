@@ -11,19 +11,17 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 /**
  * Settings screen for configuring the Matrix homeserver connection.
  *
- * Stores homeserver URL in EncryptedSharedPreferences via [SecureStorage].
+ * Stores homeserver URL in [TinkAeadPrefs] via [SecureStorage].
  * Matrix session tokens are stored with Android Keystore encryption.
  * No hardcoded URLs — all configured at runtime.
  */
 class SettingsActivity : AppCompatActivity() {
 
-    private lateinit var storage: SecureStorage
+    private val storage get() = (application as DeckChatApplication).secureStorage
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
-
-        storage = SecureStorage(this)
 
         val homeserverInput = findViewById<EditText>(R.id.homeserver_url_input)
         val roomIdInput = findViewById<EditText>(R.id.room_id_input)
