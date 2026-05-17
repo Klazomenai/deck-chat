@@ -137,6 +137,22 @@ class MatrixClientTest {
         assertEquals("Line one\nLine two\nLine three", result?.body)
     }
 
+    @Test
+    fun `parseCrewMessage handles hyphenated verbosity`() {
+        val result = parseCrewMessage("[chips:log-entry] Done.", "@bot:example.com")
+        assertEquals("chips", result?.crewName)
+        assertEquals("log-entry", result?.verbosity)
+        assertEquals("Done.", result?.body)
+    }
+
+    @Test
+    fun `parseCrewMessage handles bosun log-entry verbosity`() {
+        val result = parseCrewMessage("[bosun:log-entry] Logged.", "@bot:example.com")
+        assertEquals("bosun", result?.crewName)
+        assertEquals("log-entry", result?.verbosity)
+        assertEquals("Logged.", result?.body)
+    }
+
     // --- Mock client tests ---
 
     @Test

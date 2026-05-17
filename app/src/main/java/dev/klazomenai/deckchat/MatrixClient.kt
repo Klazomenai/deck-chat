@@ -75,4 +75,4 @@ fun parseCrewMessage(body: String, sender: String): CrewMessage? {
     )
 }
 
-private val CREW_PREFIX_REGEX = Regex("""\[(\w+):(\w+)]\s*(.+)""", RegexOption.DOT_MATCHES_ALL)
+private val CREW_PREFIX_REGEX = Regex("""\[([\w-]+):([\w-]+)]\s*(.+)""", RegexOption.DOT_MATCHES_ALL)
