@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.0-alpha.8](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.7...v0.1.0-alpha.8) (2026-05-17)
+
+
+### 🔧 Hull Repairs
+
+* **matrix:** allow hyphens in crew prefix regex verbosity group 🐛 ([#242](https://github.com/Klazomenai/deck-chat/issues/242)) ([5e08617](https://github.com/Klazomenai/deck-chat/commit/5e08617dc42062153604d767d43fcdfb197cf6df)), closes [#241](https://github.com/Klazomenai/deck-chat/issues/241)
+* **release:** use absolute URLs in release-notes banter for cross-context rendering 🐛 ([#186](https://github.com/Klazomenai/deck-chat/issues/186)) ([4db2fd8](https://github.com/Klazomenai/deck-chat/commit/4db2fd8387f1d93dfd022d3f4e60695c2f2c275e)), closes [#185](https://github.com/Klazomenai/deck-chat/issues/185)
+* **viewmodel:** bound matrixClient.stop() with withTimeoutOrNull during teardown 🐛 ([#223](https://github.com/Klazomenai/deck-chat/issues/223)) ([32431aa](https://github.com/Klazomenai/deck-chat/commit/32431aa00077a52a617abdb3e3abc062590a497e))
+* **viewmodel:** classify ClosedReceiveChannelException as PipelineCancelled 🐛 ([#224](https://github.com/Klazomenai/deck-chat/issues/224)) ([e1fa3ba](https://github.com/Klazomenai/deck-chat/commit/e1fa3bac5125ca700971ace97d6640f6e546f166))
+
+
+### ♻️ Refitted
+
+* **ci:** extract fail-closed gh-api status-case as shared helper ([#220](https://github.com/Klazomenai/deck-chat/issues/220)) ([44c2f5f](https://github.com/Klazomenai/deck-chat/commit/44c2f5f4b0afb8741714a87f47d23a987c22233e))
+* **test:** convert MainViewModelTest to Robolectric and pin SDK 34 across the suite ([#221](https://github.com/Klazomenai/deck-chat/issues/221)) ([3847acb](https://github.com/Klazomenai/deck-chat/commit/3847acbf2daab322658e3450f581cbd698ae368a))
+* **viewmodel:** cancel viewModelScope in releaseResources for test safety ♻️ ([#222](https://github.com/Klazomenai/deck-chat/issues/222)) ([5c52d45](https://github.com/Klazomenai/deck-chat/commit/5c52d454b19d77390c607c0dc3294af6df7fa252)), closes [#160](https://github.com/Klazomenai/deck-chat/issues/160)
+
 ## [0.1.0-alpha.7](https://github.com/Klazomenai/deck-chat/compare/v0.1.0-alpha.6...v0.1.0-alpha.7) (2026-04-27)
 
 
