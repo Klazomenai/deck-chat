@@ -15,7 +15,7 @@ import kotlinx.coroutines.runBlocking
  * crashes visible in logcat. File-based persistence and richer crash reporting
  * are future enhancements.
  */
-class DeckChatApplication : Application() {
+open class DeckChatApplication : Application() {
 
     /**
      * App-wide singleton SecureStorage. Lazy so the Tink keyset load + Keystore round-trip
@@ -23,7 +23,7 @@ class DeckChatApplication : Application() {
      * dispersed construction sites to use this property) lands in the sibling PR for #226 —
      * this PR adds the property only.
      */
-    val secureStorage: SecureStorage by lazy { SecureStorage(applicationContext) }
+    open val secureStorage: SecureStorage by lazy { SecureStorage(applicationContext) }
 
     override fun onCreate() {
         super.onCreate()
