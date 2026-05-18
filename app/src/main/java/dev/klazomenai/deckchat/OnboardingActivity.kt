@@ -62,9 +62,9 @@ open class OnboardingActivity : AppCompatActivity() {
             currentStep = savedInstanceState.getInt(KEY_CURRENT_STEP, 0)
         }
 
-        setupLoginStateObserver()
         setupPermissionsStep()
         showStep(currentStep)
+        setupLoginStateObserver()
 
         btnBack.setOnClickListener { goBack() }
         btnNext.setOnClickListener { goNext() }

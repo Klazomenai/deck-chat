@@ -35,6 +35,7 @@ class OnboardingViewModel(
     val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
 
     fun validateAndLogin(url: String, username: String, password: String, roomId: String) {
+        if (_loginState.value is LoginState.InProgress) return
         viewModelScope.launch {
             _loginState.value = LoginState.InProgress
             try {
@@ -57,6 +58,9 @@ class OnboardingViewModel(
     class Factory(private val application: Application) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            require(modelClass.isAssignableFrom(OnboardingViewModel::class.java)) {
+                "Unknown ViewModel class: ${modelClass.name}"
+            }
             val storage = (application as DeckChatApplication).secureStorage
             return OnboardingViewModel(application, storage) as T
         }

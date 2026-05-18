@@ -4,7 +4,11 @@ import android.app.Application
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -53,11 +57,26 @@ class OnboardingViewModelTest {
 
     @Test
     fun `validateAndLogin transitions to InProgress then Success`() = runTest {
-        val vm = viewModel(loginAction = { _, _, _ -> /* no-op — instant success */ })
+        // Use StandardTestDispatcher for io so withContext() suspends for real, giving the
+        // StateFlow collector a chance to process InProgress before Success is emitted.
+        // With UnconfinedTestDispatcher on both sides, withContext is a no-op and StateFlow
+        // conflation hides InProgress before the collector wakes up.
+        val vm = OnboardingViewModel(
+            application,
+            storage,
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+            loginAction = { _, _, _ -> /* no-op — instant success */ },
+        )
+
+        val states = mutableListOf<OnboardingViewModel.LoginState>()
+        val job = launch { vm.loginState.collect { states.add(it) } }
 
         vm.validateAndLogin("https://matrix.example.com", "user", "pass", "!room:example.com")
+        advanceUntilIdle()
+        job.cancel()
 
-        assertEquals(OnboardingViewModel.LoginState.Success, vm.loginState.value)
+        assertTrue("InProgress must be emitted before Success", states.contains(OnboardingViewModel.LoginState.InProgress))
+        assertEquals(OnboardingViewModel.LoginState.Success, states.last())
         assertEquals("!room:example.com", storage.roomId)
     }
 
@@ -75,14 +94,12 @@ class OnboardingViewModelTest {
     @Test
     fun `loginState re-emits last value to new collector (rotation semantics)`() = runTest {
         val vm = viewModel(loginAction = { _, _, _ -> throw RuntimeException("oops") })
-
         vm.validateAndLogin("https://matrix.example.com", "user", "pass", "!room:example.com")
 
-        // New collector (simulates Activity recreation after rotation) sees the last state.
-        val collected = mutableListOf<OnboardingViewModel.LoginState>()
-        val state = vm.loginState.value
-        collected.add(state)
+        // A new collector (created after Activity recreation on rotation) must immediately
+        // receive the retained Error state — StateFlow guarantees replay of last value.
+        val seenByNewCollector = vm.loginState.first()
 
-        assertTrue(collected.first() is OnboardingViewModel.LoginState.Error)
+        assertTrue(seenByNewCollector is OnboardingViewModel.LoginState.Error)
     }
 }
