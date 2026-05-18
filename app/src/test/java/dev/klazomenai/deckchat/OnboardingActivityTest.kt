@@ -37,7 +37,9 @@ import org.robolectric.annotation.Implements
  *    Fix: call shadowOf(pm).addOrUpdateActivity() in @Before to register the activity
  *    with theme=R.style.Theme_DeckChat before any buildActivity() call.
  *
- * Covers #211 baseline ACs and the rotation/error state ACs from #203.
+ * Covers #211 baseline ACs (cold start, activity-creation budget, idle-state step
+ * restoration, first-step back-press). In-flight / error-state rotation coverage and
+ * multi-step back-press coverage are deferred to #211 and #226 respectively.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(

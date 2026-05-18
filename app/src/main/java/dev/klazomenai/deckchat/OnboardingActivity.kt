@@ -148,6 +148,7 @@ open class OnboardingActivity : AppCompatActivity() {
                     }
                     is OnboardingViewModel.LoginState.Success -> {
                         loginProgress.visibility = View.GONE
+                        loginError.visibility = View.GONE
                         if (currentStep == STEP_LOGIN) advanceStep()
                     }
                 }

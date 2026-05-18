@@ -2,6 +2,7 @@ package dev.klazomenai.deckchat
 
 import android.app.Application
 import android.content.Context
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -75,7 +76,10 @@ class OnboardingViewModelTest {
         advanceUntilIdle()
         job.cancel()
 
-        assertTrue("InProgress must be emitted before Success", states.contains(OnboardingViewModel.LoginState.InProgress))
+        val inProgressIdx = states.indexOf(OnboardingViewModel.LoginState.InProgress)
+        val successIdx = states.lastIndexOf(OnboardingViewModel.LoginState.Success)
+        assertTrue("InProgress must appear before Success in state sequence",
+            inProgressIdx in 0 until successIdx)
         assertEquals(OnboardingViewModel.LoginState.Success, states.last())
         assertEquals("!room:example.com", storage.roomId)
     }
@@ -101,5 +105,28 @@ class OnboardingViewModelTest {
         val seenByNewCollector = vm.loginState.first()
 
         assertTrue(seenByNewCollector is OnboardingViewModel.LoginState.Error)
+    }
+
+    @Test
+    fun `second validateAndLogin call while InProgress is dropped`() = runTest {
+        val loginProceed = CompletableDeferred<Unit>()
+        val vm = OnboardingViewModel(
+            application,
+            storage,
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+            loginAction = { _, _, _ -> loginProceed.await() },
+        )
+
+        vm.validateAndLogin("https://matrix.example.com", "user", "pass", "!room:example.com")
+        advanceUntilIdle()  // drives coroutine into loginProceed.await(); state = InProgress
+
+        vm.validateAndLogin("https://matrix.example.com", "user2", "pass2", "!room2:example.com")
+        assertEquals(OnboardingViewModel.LoginState.InProgress, vm.loginState.value)
+
+        loginProceed.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(OnboardingViewModel.LoginState.Success, vm.loginState.value)
+        assertEquals("!room:example.com", storage.roomId)  // first call's roomId, not second
     }
 }
