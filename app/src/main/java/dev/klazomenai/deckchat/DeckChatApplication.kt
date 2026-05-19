@@ -15,15 +15,18 @@ import kotlinx.coroutines.runBlocking
  * crashes visible in logcat. File-based persistence and richer crash reporting
  * are future enhancements.
  */
-class DeckChatApplication : Application() {
+open class DeckChatApplication : Application() {
 
     /**
-     * App-wide singleton SecureStorage. Lazy so the Tink keyset load + Keystore round-trip
-     * happens once and is shared across all callers. Call-site refactor (rewriting the five
-     * dispersed construction sites to use this property) lands in the sibling PR for #226 —
-     * this PR adds the property only.
+     * App-wide [SecureStorage] singleton. Lazily initialised so the Tink keyset load and
+     * Keystore round-trip happens once and is shared across all callers (MainActivity,
+     * SettingsActivity, OnboardingActivity, and their ViewModels).
+     *
+     * Declared `open` so test [Application] subclasses can override with a
+     * [SecureStorage.PlaintextTokenEncryptor]-backed instance that avoids the Android
+     * Keystore dependency in JVM unit tests.
      */
-    val secureStorage: SecureStorage by lazy { SecureStorage(applicationContext) }
+    open val secureStorage: SecureStorage by lazy { SecureStorage(applicationContext) }
 
     override fun onCreate() {
         super.onCreate()

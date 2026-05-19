@@ -161,14 +161,24 @@ android {
         }
     }
 
-    // testOptions block intentionally absent — `unitTests.isReturnDefaultValues`
-    // defaults to false, which is what we want: every JVM test that touches the
-    // Android framework must use @RunWith(RobolectricTestRunner::class) so real
-    // framework stubs are wired in. The `returnDefaultValues = true` escape hatch
-    // silently stubs every un-mocked Android call (e.g. Context.getResources()
-    // returning null), masking bugs. Robolectric + @Config(sdk = [34]) is the
-    // discipline; see app/src/test/java/.../MainViewModelTest.kt and the other
-    // four Robolectric-annotated tests.
+    // `unitTests.isReturnDefaultValues` is intentionally NOT set (defaults to false):
+    // every JVM test that touches the Android framework must use
+    // @RunWith(RobolectricTestRunner::class) so real framework stubs are wired in.
+    // The `returnDefaultValues = true` escape hatch silently stubs every un-mocked
+    // Android call (e.g. Context.getResources() returning null), masking bugs.
+    //
+    // `isIncludeAndroidResources = true` is required for Robolectric binary resource
+    // tests. Without it, AGP does not set the `android_resource_apk` system property,
+    // so Robolectric's DefaultManifestFactory never loads the compiled resources.arsc,
+    // the 0x7f package is absent from CppAssetManager2, and any call that routes
+    // through obtainStyledAttributes() — including AppCompat's theme check in
+    // createSubDecor() — receives an empty TypedArray and throws
+    // "You need to use a Theme.AppCompat theme". OnboardingActivityTest requires this.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

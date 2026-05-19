@@ -43,7 +43,8 @@
 
         <activity android:name=".SettingsActivity" />
 
-        <activity android:name=".OnboardingActivity" />
+        <activity android:name=".OnboardingActivity"
+            android:theme="@style/Theme.DeckChat" />
 
         <!-- Headset button → start/stop RecordingService.
              exported=true required: system delivers ACTION_MEDIA_BUTTON from outside the app.

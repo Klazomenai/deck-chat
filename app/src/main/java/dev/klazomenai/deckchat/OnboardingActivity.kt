@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -17,16 +16,16 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import kotlin.coroutines.cancellation.CancellationException
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-class OnboardingActivity : AppCompatActivity() {
+open class OnboardingActivity : AppCompatActivity() {
 
     private val storage get() = (application as DeckChatApplication).secureStorage
+    private lateinit var viewModel: OnboardingViewModel
     private var currentStep = 0
 
     private lateinit var stepViews: List<View>
@@ -58,12 +57,16 @@ class OnboardingActivity : AppCompatActivity() {
             findViewById(R.id.step_bluetooth),
         )
 
+        viewModel = ViewModelProvider(this, OnboardingViewModel.Factory(application))
+            .get(OnboardingViewModel::class.java)
+
         if (savedInstanceState != null) {
             currentStep = savedInstanceState.getInt(KEY_CURRENT_STEP, 0)
         }
 
         setupPermissionsStep()
         showStep(currentStep)
+        setupLoginStateObserver()
 
         btnBack.setOnClickListener { goBack() }
         btnNext.setOnClickListener { goNext() }
@@ -122,13 +125,49 @@ class OnboardingActivity : AppCompatActivity() {
 
     // --- Step 1: Login ---
 
+    private fun setupLoginStateObserver() {
+        val loginProgress = findViewById<ProgressBar>(R.id.login_progress)
+        val loginError = findViewById<TextView>(R.id.login_error)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.loginState.collect { state ->
+                    when (state) {
+                        is OnboardingViewModel.LoginState.Idle -> {
+                            loginProgress.visibility = View.GONE
+                            loginError.visibility = View.GONE
+                            btnNext.isEnabled = true
+                        }
+                        is OnboardingViewModel.LoginState.InProgress -> {
+                            loginProgress.visibility = View.VISIBLE
+                            loginError.visibility = View.GONE
+                            btnNext.isEnabled = false
+                        }
+                        is OnboardingViewModel.LoginState.Error -> {
+                            loginProgress.visibility = View.GONE
+                            loginError.text = state.message
+                            loginError.visibility = View.VISIBLE
+                            btnNext.isEnabled = true
+                        }
+                        is OnboardingViewModel.LoginState.Success -> {
+                            loginProgress.visibility = View.GONE
+                            loginError.visibility = View.GONE
+                            if (currentStep == STEP_LOGIN) {
+                                advanceStep()
+                                viewModel.acknowledgeSuccess()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun validateAndLogin() {
         val homeserverInput = findViewById<EditText>(R.id.onboarding_homeserver_url)
         val usernameInput = findViewById<EditText>(R.id.onboarding_username)
         val passwordInput = findViewById<EditText>(R.id.onboarding_password)
         val roomIdInput = findViewById<EditText>(R.id.onboarding_room_id)
-        val loginProgress = findViewById<ProgressBar>(R.id.login_progress)
-        val loginError = findViewById<TextView>(R.id.login_error)
 
         val url = homeserverInput.text.toString().trim()
         val username = usernameInput.text.toString().trim()
@@ -142,43 +181,7 @@ class OnboardingActivity : AppCompatActivity() {
         if (password.isEmpty()) { passwordInput.error = "Required"; return }
         if (roomId.isEmpty()) { roomIdInput.error = "Required"; return }
 
-        loginProgress.visibility = View.VISIBLE
-        loginError.visibility = View.GONE
-        btnNext.isEnabled = false
-
-        val coroutineErrorHandler = CoroutineExceptionHandler { _, throwable ->
-            Log.e(TAG, "Unhandled coroutine exception during login", throwable)
-            runOnUiThread {
-                loginProgress.visibility = View.GONE
-                loginError.text = throwable.message ?: "Login failed unexpectedly"
-                loginError.visibility = View.VISIBLE
-                btnNext.isEnabled = true
-            }
-        }
-
-        lifecycleScope.launch(coroutineErrorHandler) {
-            try {
-                withContext(Dispatchers.IO) {
-                    val host = Uri.parse(url).host ?: "unknown"
-                    Log.d(TAG, "Creating RustMatrixClient for $host")
-                    val client = RustMatrixClient(applicationContext, storage)
-                    Log.d(TAG, "RustMatrixClient created, starting login")
-                    client.login(url, username, password)
-                    Log.d(TAG, "Login successful")
-                }
-                storage.roomId = roomId
-                loginProgress.visibility = View.GONE
-                advanceStep()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Login failed: ${e.javaClass.name}", e)
-                loginProgress.visibility = View.GONE
-                loginError.text = e.message ?: "Login failed (${e.javaClass.name})"
-                loginError.visibility = View.VISIBLE
-                btnNext.isEnabled = true
-            }
-        }
+        viewModel.validateAndLogin(url, username, password, roomId)
     }
 
     // --- Step 2: Voice ---
