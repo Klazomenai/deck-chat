@@ -77,9 +77,12 @@ class OnboardingViewModelTest {
         job.cancel()
 
         val inProgressIdx = states.indexOf(OnboardingViewModel.LoginState.InProgress)
-        val successIdx = states.lastIndexOf(OnboardingViewModel.LoginState.Success)
-        assertTrue("InProgress must appear before Success in state sequence",
-            inProgressIdx in 0 until successIdx)
+        val firstSuccessIdx = states.indexOf(OnboardingViewModel.LoginState.Success)
+        // Both indices must be valid AND InProgress must precede the FIRST Success.
+        // Using indexOf (first occurrence) ensures a broken Success→InProgress→Success
+        // sequence would give firstSuccessIdx < inProgressIdx and fail the assertion.
+        assertTrue("InProgress must appear before first Success in state sequence",
+            inProgressIdx in 0 until firstSuccessIdx)
         assertEquals(OnboardingViewModel.LoginState.Success, states.last())
         assertEquals("!room:example.com", storage.roomId)
     }

@@ -134,4 +134,26 @@ class OnboardingActivityTest {
         activity.onBackPressedDispatcher.onBackPressed()
         assertTrue(activity.isFinishing)
     }
+
+    // --- OnboardingViewModel.Factory ---
+
+    @Test
+    fun `Factory creates ViewModel using TestDeckChatApplication secureStorage`() {
+        // TestDeckChatApplication overrides secureStorage with PlaintextTokenEncryptor,
+        // so Factory.create() must succeed without Android Keystore.
+        val vm = OnboardingViewModel.Factory(RuntimeEnvironment.getApplication())
+            .create(OnboardingViewModel::class.java)
+        assertEquals(OnboardingViewModel.LoginState.Idle, vm.loginState.value)
+    }
+
+    @Test
+    fun `Factory throws for unrelated ViewModel class`() {
+        val factory = OnboardingViewModel.Factory(RuntimeEnvironment.getApplication())
+        try {
+            factory.create(MainViewModel::class.java)
+            throw AssertionError("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(e.message!!.contains("Unknown ViewModel class"))
+        }
+    }
 }
