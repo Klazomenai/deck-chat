@@ -41,7 +41,7 @@ import org.robolectric.annotation.Implements
  *    (checkVectorDrawableSetup), which fails on abc_vector_test from a ContextThemeWrapper
  *    in Robolectric's binary-resource loader.
  *
- * 2. [registerActivityTheme]: Robolectric 4.16.1 + SDK 34 has a bug where
+ * 2. [setUp] (`@Before`): Robolectric 4.16.1 + SDK 34 has a bug where
  *    PackageParser.generatePackageInfo returns an empty activities array, so
  *    packageInfos never receives ActivityInfo.theme from the binary manifest.
  *    ShadowActivity.callAttach() then calls addActivityIfNotPresent() which inserts
