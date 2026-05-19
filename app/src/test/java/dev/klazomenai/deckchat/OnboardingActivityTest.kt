@@ -101,6 +101,13 @@ class OnboardingActivityTest {
         Dispatchers.setMain(testDispatcher)
 
         val app = RuntimeEnvironment.getApplication()
+
+        // Clear the stable "test_onboarding" SharedPreferences so any prior test's writes
+        // (e.g. roomId set on a successful login) cannot leak into subsequent tests and
+        // create order-dependent failures.
+        app.getSharedPreferences("test_onboarding", Context.MODE_PRIVATE)
+            .edit().clear().commit()
+
         val activityInfo = ActivityInfo().apply {
             packageName = app.packageName
             name = OnboardingActivity::class.java.name
@@ -143,7 +150,10 @@ class OnboardingActivityTest {
         val testVm = OnboardingViewModel(
             activity.application,
             (activity.application as DeckChatApplication).secureStorage,
-            ioDispatcher = Dispatchers.Unconfined,
+            // Use the same UnconfinedTestDispatcher that backs Dispatchers.Main so the
+            // viewModelScope launch + withContext(io) switch is driven by test-controlled
+            // scheduling, not the global Dispatchers.Unconfined.
+            ioDispatcher = testDispatcher,
             loginAction = loginAction,
         )
         val factory = object : ViewModelProvider.Factory {
@@ -172,7 +182,7 @@ class OnboardingActivityTest {
         val stepLogin = activity.findViewById<View>(R.id.step_login)
         val elapsedMs = (System.nanoTime() - start) / 1_000_000
         assertEquals(View.VISIBLE, stepLogin.visibility)
-        assertTrue("onCreate exceeded 500ms budget (${elapsedMs}ms)", elapsedMs < 500)
+        assertTrue("onCreate exceeded 500ms budget (${elapsedMs}ms)", elapsedMs <= 500)
     }
 
     @Test
