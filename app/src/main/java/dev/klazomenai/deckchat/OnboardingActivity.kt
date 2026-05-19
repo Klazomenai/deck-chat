@@ -16,8 +16,10 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 
 open class OnboardingActivity : AppCompatActivity() {
@@ -128,28 +130,33 @@ open class OnboardingActivity : AppCompatActivity() {
         val loginError = findViewById<TextView>(R.id.login_error)
 
         lifecycleScope.launch {
-            viewModel.loginState.collect { state ->
-                when (state) {
-                    is OnboardingViewModel.LoginState.Idle -> {
-                        loginProgress.visibility = View.GONE
-                        loginError.visibility = View.GONE
-                        btnNext.isEnabled = true
-                    }
-                    is OnboardingViewModel.LoginState.InProgress -> {
-                        loginProgress.visibility = View.VISIBLE
-                        loginError.visibility = View.GONE
-                        btnNext.isEnabled = false
-                    }
-                    is OnboardingViewModel.LoginState.Error -> {
-                        loginProgress.visibility = View.GONE
-                        loginError.text = state.message
-                        loginError.visibility = View.VISIBLE
-                        btnNext.isEnabled = true
-                    }
-                    is OnboardingViewModel.LoginState.Success -> {
-                        loginProgress.visibility = View.GONE
-                        loginError.visibility = View.GONE
-                        if (currentStep == STEP_LOGIN) advanceStep()
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.loginState.collect { state ->
+                    when (state) {
+                        is OnboardingViewModel.LoginState.Idle -> {
+                            loginProgress.visibility = View.GONE
+                            loginError.visibility = View.GONE
+                            btnNext.isEnabled = true
+                        }
+                        is OnboardingViewModel.LoginState.InProgress -> {
+                            loginProgress.visibility = View.VISIBLE
+                            loginError.visibility = View.GONE
+                            btnNext.isEnabled = false
+                        }
+                        is OnboardingViewModel.LoginState.Error -> {
+                            loginProgress.visibility = View.GONE
+                            loginError.text = state.message
+                            loginError.visibility = View.VISIBLE
+                            btnNext.isEnabled = true
+                        }
+                        is OnboardingViewModel.LoginState.Success -> {
+                            loginProgress.visibility = View.GONE
+                            loginError.visibility = View.GONE
+                            if (currentStep == STEP_LOGIN) {
+                                advanceStep()
+                                viewModel.acknowledgeSuccess()
+                            }
+                        }
                     }
                 }
             }

@@ -55,6 +55,12 @@ class OnboardingViewModel(
         }
     }
 
+    fun acknowledgeSuccess() {
+        if (_loginState.value is LoginState.Success) {
+            _loginState.value = LoginState.Idle
+        }
+    }
+
     class Factory(private val application: Application) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
